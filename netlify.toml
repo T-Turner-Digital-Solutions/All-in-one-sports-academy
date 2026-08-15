@@ -16,7 +16,14 @@
 # documented precedence: netlify.toml wins over dashboard settings.
 
 [build]
-  command = "next build"
+  # `prisma migrate deploy` applies any pending migrations (safe/no-op if
+  # none are pending) and `prisma/seed.ts` upserts baseline reference data
+  # (sports catalog, the owner account, the single-session package, core
+  # settings). Both are idempotent — safe to run on every deploy — so the
+  # production database schema and baseline data stay in sync with the code
+  # automatically, without requiring direct database access from anywhere
+  # other than Netlify's own build environment.
+  command = "npx prisma migrate deploy && npx tsx prisma/seed.ts && next build"
   publish = ".next"
 
 [build.environment]
