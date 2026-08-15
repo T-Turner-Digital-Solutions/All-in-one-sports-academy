@@ -22,7 +22,7 @@ export default function AboutPage() {
           width={420}
           height={420}
           unoptimized
-          className="aio-fade-sides pointer-events-none absolute -right-16 top-1/2 hidden -translate-y-1/2 opacity-15 sm:block"
+          className="aio-fade-sides pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 opacity-10 sm:block"
         />
         <Container className="relative">
           <p className="font-display text-xs font-semibold tracking-[0.3em] text-aio-red">ABOUT THE ACADEMY</p>
