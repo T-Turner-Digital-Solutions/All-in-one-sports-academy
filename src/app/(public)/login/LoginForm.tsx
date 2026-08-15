@@ -17,6 +17,11 @@ const PORTAL_REDIRECT: Record<string, string> = {
   admin: "/admin",
 };
 
+// Publicly documented demo account (see prisma/seed.ts) so visitors can
+// explore the client portal without creating a real account.
+const DEMO_CLIENT_EMAIL = "tabithathompson2517@gmail.com";
+const DEMO_CLIENT_PASSWORD = "ChangeMe123!";
+
 export function LoginForm({ portal }: { portal: string }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -24,6 +29,7 @@ export function LoginForm({ portal }: { portal: string }) {
     params.get("error") === "forbidden" ? "That account doesn't have access to this portal." : null
   );
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,6 +49,24 @@ export function LoginForm({ portal }: { portal: string }) {
     }
     const callbackUrl = params.get("callbackUrl");
     router.push(callbackUrl || PORTAL_REDIRECT[portal] || "/");
+    router.refresh();
+  }
+
+  async function onDemoLogin() {
+    setDemoLoading(true);
+    setError(null);
+    const res = await signIn("credentials", {
+      email: DEMO_CLIENT_EMAIL,
+      password: DEMO_CLIENT_PASSWORD,
+      portal: "client",
+      redirect: false,
+    });
+    setDemoLoading(false);
+    if (res?.error) {
+      setError("The demo account is temporarily unavailable. Please try again shortly.");
+      return;
+    }
+    router.push("/dashboard");
     router.refresh();
   }
 
@@ -79,12 +103,20 @@ export function LoginForm({ portal }: { portal: string }) {
       </form>
 
       {portal === "client" ? (
-        <p className="mt-6 text-sm text-aio-silver">
-          New to All In One Sports Academy?{" "}
-          <a href="/register" className="text-aio-red hover:underline">
-            Create an account
-          </a>
-        </p>
+        <div className="mt-6 space-y-4">
+          <p className="text-sm text-aio-silver">
+            New to All In One Sports Academy?{" "}
+            <a href="/register" className="text-aio-red hover:underline">
+              Create an account
+            </a>
+          </p>
+          <Button type="button" variant="outline" className="w-full" onClick={onDemoLogin} disabled={demoLoading}>
+            {demoLoading ? "Loading Demo..." : "View Demo"}
+          </Button>
+          <p className="text-xs text-aio-silver/70">
+            Explore the client portal instantly with a demo account — no sign-up required.
+          </p>
+        </div>
       ) : null}
       {portal === "coach" ? (
         <p className="mt-6 text-sm text-aio-silver">
