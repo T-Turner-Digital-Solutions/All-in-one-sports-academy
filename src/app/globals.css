@@ -155,6 +155,31 @@ h1, h2, h3, h4, h5, h6, .font-display {
   outline-offset: 2px;
 }
 
+/* Site header: dark gradient instead of a flat black bar, with a metallic/red
+   racing-stripe accent along the bottom edge instead of a plain hairline. */
+.aio-header {
+  background: linear-gradient(180deg, var(--color-aio-black) 0%, #0f1012 100%);
+  position: relative;
+}
+
+.aio-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-aio-red) 20%,
+    var(--color-aio-silver) 50%,
+    var(--color-aio-red) 80%,
+    transparent 100%
+  );
+  opacity: 0.8;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .aio-animate-drift {
     animation: none;

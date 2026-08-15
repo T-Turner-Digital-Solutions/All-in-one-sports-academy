@@ -33,8 +33,9 @@ export function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-aio-black/95 backdrop-blur">
-      <Container className="flex h-16 items-center justify-between sm:h-20">
+    <header className="aio-header sticky top-0 z-50 overflow-hidden backdrop-blur">
+      <div className="aio-speed-lines opacity-40" />
+      <Container className="relative flex h-16 items-center justify-between sm:h-20">
         <Link href="/" className="flex items-center gap-3">
           <Image src="/brand/aio-logo.png" alt="All In One Sports Academy" width={44} height={44} className="h-10 w-10 sm:h-11 sm:w-11" priority />
           <span className="hidden font-display text-lg font-bold tracking-wider sm:inline">
