@@ -16,25 +16,29 @@ export default function AboutPage() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10 bg-aio-black py-24">
-        <Image
-          src="/brand/aio-logo.png"
-          alt="All In One Sports Academy"
-          width={420}
-          height={420}
-          unoptimized
-          className="aio-fade-sides pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 opacity-10 sm:block"
-        />
-        <Container className="relative">
-          <p className="font-display text-xs font-semibold tracking-[0.3em] text-aio-red">ABOUT THE ACADEMY</p>
-          <h1 className="mt-4 max-w-3xl text-5xl font-bold">
-            Built by an athlete, <span className="text-aio-red">for athletes.</span>
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-aio-silver-light/90">
-            All In One Sports Academy was founded by Justin Woodall to give athletes of every sport,
-            age, and skill level access to the same professional-level coaching, structure, and
-            accountability that elite programs use. One academy, every sport — built to grow with
-            every athlete who walks through the door.
-          </p>
+        <Container className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
+          <div>
+            <p className="font-display text-xs font-semibold tracking-[0.3em] text-aio-red">ABOUT THE ACADEMY</p>
+            <h1 className="mt-4 max-w-3xl text-5xl font-bold">
+              Built by an athlete, <span className="text-aio-red">for athletes.</span>
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg text-aio-silver-light/90">
+              All In One Sports Academy was founded by Justin Woodall to give athletes of every sport,
+              age, and skill level access to the same professional-level coaching, structure, and
+              accountability that elite programs use. One academy, every sport — built to grow with
+              every athlete who walks through the door.
+            </p>
+          </div>
+          <div className="hidden items-center justify-center lg:flex">
+            <Image
+              src="/brand/aio-logo.png"
+              alt="All In One Sports Academy"
+              width={340}
+              height={340}
+              unoptimized
+              className="aio-fade-sides opacity-30"
+            />
+          </div>
         </Container>
       </section>
 
