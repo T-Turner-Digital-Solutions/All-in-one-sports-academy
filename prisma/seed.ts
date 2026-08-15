@@ -43,7 +43,12 @@ async function main() {
       iconKey: "development",
       imageUrl: "/sports/athletic-development.png",
     },
-    { name: "Position-Specific Training", slug: "position-specific-training", iconKey: "target", imageUrl: null },
+    {
+      name: "Position-Specific Training",
+      slug: "position-specific-training",
+      iconKey: "target",
+      imageUrl: "/sports/position-specific-training.png",
+    },
   ];
 
   const sports = [];
