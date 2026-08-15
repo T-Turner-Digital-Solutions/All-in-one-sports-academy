@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Container, SectionHeading } from "@/components/ui/Container";
 import { ButtonLink } from "@/components/ui/Button";
 import { Target, Users, TrendingUp, Award } from "lucide-react";
@@ -15,6 +16,14 @@ export default function AboutPage() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10 bg-aio-black py-24">
+        <Image
+          src="/brand/aio-logo.png"
+          alt="All In One Sports Academy"
+          width={420}
+          height={420}
+          unoptimized
+          className="aio-fade-sides pointer-events-none absolute -right-16 top-1/2 hidden -translate-y-1/2 opacity-15 sm:block"
+        />
         <Container className="relative">
           <p className="font-display text-xs font-semibold tracking-[0.3em] text-aio-red">ABOUT THE ACADEMY</p>
           <h1 className="mt-4 max-w-3xl text-5xl font-bold">
