@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   description:
     "All In One Sports Academy delivers premium multi-sport athletic training and coaching for youth and athletes. Train. Develop. Compete. Succeed.",
   icons: {
-    icon: "/brand/aio-logo.png",
-    apple: "/brand/aio-logo.png",
+    icon: "/brand/aio-logo-icon.png",
+    apple: "/brand/aio-logo-icon.png",
   },
 };
 

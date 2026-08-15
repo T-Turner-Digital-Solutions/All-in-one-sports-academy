@@ -48,7 +48,14 @@ export function SiteFooter() {
       <Container>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-6">
           <div className="lg:col-span-2">
-            <Image src="/brand/aio-logo.png" alt="All In One Sports Academy" width={56} height={56} className="h-14 w-14" />
+            <Image
+              src="/brand/aio-logo-icon.png"
+              alt="All In One Sports Academy"
+              width={56}
+              height={56}
+              unoptimized
+              className="h-14 w-14"
+            />
             <p className="mt-3 max-w-xs text-sm text-aio-silver">
               One Academy. Every Sport. Endless Possibilities.
             </p>
