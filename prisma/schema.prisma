@@ -1,0 +1,1076 @@
+// All In One Sports Academy — core data model
+// Design notes:
+// - Sports, locations, coaches, programs, packages are all admin-configurable (no hard-coding).
+// - Appointment booking uses a DB-level composite unique constraint (coachId + startsAt) plus
+//   short-lived HELD status rows to prevent double-booking / race conditions.
+// - Money is stored in integer cents to avoid floating point issues.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// IDENTITY & ACCESS CONTROL
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN // Justin Woodall — owner, full access
+  ADMIN // staff admin, permissions assigned by owner
+  COACH // approved contractor / coach
+  CLIENT // parent / guardian / adult athlete
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String
+  role          Role      @default(CLIENT)
+  firstName     String
+  lastName      String
+  phone         String?
+  isActive      Boolean   @default(true)
+  // fine-grained admin permission overrides (owner assigns); null/empty = role defaults
+  permissions   Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  household             Household?             @relation(fields: [householdId], references: [id])
+  householdId           String?
+  coach                 Coach?
+  contractorApplication ContractorApplication?
+  notifications         Notification[]
+  auditLogs             AuditLog[]             @relation("AuditActor")
+  reviews               Review[]
+  messagesSent          Message[]              @relation("MessageSender")
+  sessions              AuthSession[]
+
+  @@index([role])
+  @@index([householdId])
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+// ---------------------------------------------------------------------------
+// HOUSEHOLDS / CLIENTS / ATHLETES
+// ---------------------------------------------------------------------------
+
+model Household {
+  id        String   @id @default(cuid())
+  name      String // e.g. "The Thompson Family"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members         User[]
+  athletes        Athlete[]
+  appointments    Appointment[]
+  payments        Payment[]
+  packageBalances PackageBalance[]
+  waivers         WaiverSignature[]
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ELITE
+}
+
+model Athlete {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  firstName             String
+  lastName              String
+  dob                   DateTime
+  school                String?
+  team                  String?
+  primarySportId        String?
+  primarySport          Sport?           @relation(fields: [primarySportId], references: [id])
+  position              String?
+  experienceLevel       ExperienceLevel?
+  developmentGoals      String?
+  injuriesRestrictions  String?
+  medicalNotes          String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  photoVideoRelease     Boolean          @default(false)
+  isActive              Boolean          @default(true)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  appointments          Appointment[]
+  recurringAppointments RecurringAppointment[]
+  evaluations           Evaluation[]
+  progressMetrics       ProgressMetric[]
+  sessionNotes          SessionNote[]
+  waivers               WaiverSignature[]
+  camps                 CampRegistration[]
+  waitlistEntries       WaitlistEntry[]
+
+  @@index([householdId])
+}
+
+// ---------------------------------------------------------------------------
+// COACHES / CONTRACTORS
+// ---------------------------------------------------------------------------
+
+enum ContractorStatus {
+  APPLICANT
+  PENDING_REVIEW
+  MORE_INFO_REQUIRED
+  APPROVED
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  DENIED
+}
+
+model ContractorApplication {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName                  String
+  phone                     String
+  email                     String
+  address                   String
+  sportsCoached             String[] // sport names/ids as submitted
+  trainingSpecialties       String?
+  positionsTrained          String?
+  yearsExperience           Int?
+  biography                 String?
+  coachingHistory           String?
+  certifications            String?
+  cprFirstAid               Boolean  @default(false)
+  references                String?
+  availability              String?
+  preferredLocation         String?
+  emergencyContactName      String?
+  emergencyContactPhone     String?
+  backgroundCheckAuthorized Boolean  @default(false)
+
+  status        ContractorStatus @default(PENDING_REVIEW)
+  reviewerNotes String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documents ContractorDocument[]
+
+  @@index([status])
+}
+
+enum DocumentType {
+  PROFILE_PHOTO
+  RESUME
+  DRIVERS_LICENSE_ID
+  W9
+  COACHING_CERTIFICATE
+  CPR_FIRST_AID
+  BACKGROUND_CHECK
+  INSURANCE
+  INDEPENDENT_CONTRACTOR_AGREEMENT
+  OTHER
+}
+
+model ContractorDocument {
+  id            String                @id @default(cuid())
+  applicationId String
+  application   ContractorApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  type          DocumentType
+  fileUrl       String
+  fileName      String
+  uploadedAt    DateTime              @default(now())
+}
+
+enum CoachStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum CompensationType {
+  FLAT_PER_SESSION
+  PERCENTAGE
+  HOURLY
+  CUSTOM
+}
+
+model Coach {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio              String?
+  photoUrl         String?
+  status           CoachStatus @default(ACTIVE)
+  isPubliclyListed Boolean     @default(true)
+  applicationId    String?     @unique
+
+  compensationType  CompensationType @default(FLAT_PER_SESSION)
+  flatAmountCents   Int? // e.g. 4000 = $40 per session
+  percentageBps     Int? // basis points, e.g. 6000 = 60%
+  hourlyRateCents   Int?
+  compensationNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sports                CoachSport[]
+  locations             CoachLocation[]
+  availability          CoachAvailability[]
+  blockedTimes          BlockedTime[]
+  appointments          Appointment[]
+  recurringAppointments RecurringAppointment[]
+  earnings              CoachEarning[]
+  payouts               Payout[]
+  sessionNotes          SessionNote[]
+  evaluations           Evaluation[]
+  camps                 CampCoach[]
+  waitlistEntries       WaitlistEntry[]
+  waitlistsAsPreferred  Waitlist[]
+
+  @@index([status])
+}
+
+model CoachSport {
+  id      String @id @default(cuid())
+  coachId String
+  coach   Coach  @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  sportId String
+  sport   Sport  @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@unique([coachId, sportId])
+}
+
+model CoachLocation {
+  id         String   @id @default(cuid())
+  coachId    String
+  coach      Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([coachId, locationId])
+}
+
+enum AvailabilityType {
+  RECURRING
+  ONE_TIME
+}
+
+model CoachAvailability {
+  id         String           @id @default(cuid())
+  coachId    String
+  coach      Coach            @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  type       AvailabilityType @default(RECURRING)
+  dayOfWeek  Int? // 0=Sunday .. 6=Saturday, used when RECURRING
+  date       DateTime? // used when ONE_TIME
+  startTime  String // "16:00" 24h local time
+  endTime    String // "20:00"
+  locationId String?
+  location   Location?        @relation(fields: [locationId], references: [id])
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+
+  @@index([coachId])
+}
+
+enum BlockedTimeReason {
+  VACATION
+  TIME_OFF_REQUEST
+  PERSONAL_APPOINTMENT
+  ADMIN_OVERRIDE
+  OTHER
+}
+
+model BlockedTime {
+  id         String            @id @default(cuid())
+  coachId    String?
+  coach      Coach?            @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  locationId String?
+  location   Location?         @relation(fields: [locationId], references: [id])
+  orgWide    Boolean           @default(false) // full organization closure
+  startsAt   DateTime
+  endsAt     DateTime
+  reason     BlockedTimeReason @default(OTHER)
+  notes      String?
+  createdAt  DateTime          @default(now())
+
+  @@index([coachId])
+  @@index([startsAt, endsAt])
+}
+
+// ---------------------------------------------------------------------------
+// LOCATIONS
+// ---------------------------------------------------------------------------
+
+model Location {
+  id           String   @id @default(cuid())
+  name         String
+  address      String
+  city         String
+  state        String
+  zip          String
+  mapUrl       String?
+  instructions String?
+  hours        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  coaches      CoachLocation[]
+  availability CoachAvailability[]
+  blockedTimes BlockedTime[]
+  appointments Appointment[]
+  camps        Camp[]
+  sports       LocationSport[]
+}
+
+model LocationSport {
+  id         String   @id @default(cuid())
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  sportId    String
+  sport      Sport    @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, sportId])
+}
+
+// ---------------------------------------------------------------------------
+// SPORTS / PROGRAMS (admin-manageable, not hard-coded)
+// ---------------------------------------------------------------------------
+
+model Sport {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  iconKey     String? // maps to a UI icon
+  imageUrl    String?
+  isPublished Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  coaches               CoachSport[]
+  athletes              Athlete[]
+  trainingPrograms      TrainingProgram[]
+  appointments          Appointment[]
+  recurringAppointments RecurringAppointment[]
+  camps                 Camp[]
+  locations             LocationSport[]
+  promoCodeSports       PromoCodeSport[]
+  waitlists             Waitlist[]
+}
+
+model TrainingProgram {
+  id          String   @id @default(cuid())
+  sportId     String?
+  sport       Sport?   @relation(fields: [sportId], references: [id])
+  name        String // e.g. "Position-Specific Training", "Speed & Agility"
+  description String?
+  isPublished Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  appointments Appointment[]
+  packages     Package[]
+}
+
+// ---------------------------------------------------------------------------
+// APPOINTMENTS / BOOKING ENGINE
+// ---------------------------------------------------------------------------
+
+enum AppointmentStatus {
+  HELD // temporary hold during checkout, not yet paid
+  SCHEDULED
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  RESCHEDULED
+  CLIENT_CANCELLED
+  COACH_CANCELLED
+  LATE_CANCELLATION
+  NO_SHOW
+}
+
+enum BookingSource {
+  PUBLIC_BOOKING
+  ADMIN_MANUAL
+  RECURRING
+  WAITLIST_OFFER
+}
+
+model Appointment {
+  id                String           @id @default(cuid())
+  athleteId         String
+  athlete           Athlete          @relation(fields: [athleteId], references: [id])
+  householdId       String
+  household         Household        @relation(fields: [householdId], references: [id])
+  coachId           String
+  coach             Coach            @relation(fields: [coachId], references: [id])
+  sportId           String
+  sport             Sport            @relation(fields: [sportId], references: [id])
+  trainingProgramId String?
+  trainingProgram   TrainingProgram? @relation(fields: [trainingProgramId], references: [id])
+  locationId        String?
+  location          Location?        @relation(fields: [locationId], references: [id])
+
+  startsAt DateTime
+  endsAt   DateTime
+  status   AppointmentStatus @default(HELD)
+  source   BookingSource     @default(PUBLIC_BOOKING)
+
+  priceCents    Int // price charged for this session
+  holdExpiresAt DateTime? // used while status = HELD during checkout
+
+  recurringAppointmentId String?
+  recurringAppointment   RecurringAppointment? @relation(fields: [recurringAppointmentId], references: [id])
+
+  substitutedForCoachId String? // if reassigned, original coach id
+  cancelledAt           DateTime?
+  cancelledBy           String? // userId
+  cancellationReason    String?
+  rescheduledFromId     String?      @unique
+  rescheduledFrom       Appointment? @relation("RescheduleChain", fields: [rescheduledFromId], references: [id])
+  rescheduledTo         Appointment? @relation("RescheduleChain")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payment       Payment?
+  attendance    Attendance?
+  sessionNote   SessionNote?
+  review        Review?
+  waitlistOffer WaitlistOffer?
+  coachEarning  CoachEarning?
+
+  // Prevent two non-held, non-cancelled bookings for the same coach at the same start time.
+  // Enforced in application logic via transaction + this unique index for the common case.
+  @@unique([coachId, startsAt])
+  @@index([athleteId])
+  @@index([status])
+  @@index([startsAt])
+}
+
+// ---------------------------------------------------------------------------
+// RECURRING TRAINING
+// ---------------------------------------------------------------------------
+
+enum RecurrenceFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum RecurrenceEndType {
+  NO_END
+  ON_DATE
+  AFTER_N_SESSIONS
+}
+
+enum RecurringPaymentArrangement {
+  PAY_PER_SESSION
+  PREPAID
+  PACKAGE
+  ADMIN_RESERVED
+}
+
+enum RecurringStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model RecurringAppointment {
+  id                String  @id @default(cuid())
+  athleteId         String
+  athlete           Athlete @relation(fields: [athleteId], references: [id])
+  coachId           String
+  coach             Coach   @relation(fields: [coachId], references: [id])
+  sportId           String
+  sport             Sport   @relation(fields: [sportId], references: [id])
+  trainingProgramId String?
+
+  dayOfWeek Int // 0-6
+  startTime String // "16:00"
+  endTime   String // "17:00"
+
+  frequency        RecurrenceFrequency
+  customRuleNotes  String?
+  startDate        DateTime
+  endType          RecurrenceEndType   @default(NO_END)
+  endDate          DateTime?
+  numberOfSessions Int?
+
+  paymentArrangement RecurringPaymentArrangement @default(PAY_PER_SESSION)
+  notes              String?
+  status             RecurringStatus             @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@index([coachId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// PAYMENTS / POLICY / PACKAGES
+// ---------------------------------------------------------------------------
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  CREDITED // converted to credit for future booking
+}
+
+model Payment {
+  id                 String            @id @default(cuid())
+  appointmentId      String?           @unique
+  appointment        Appointment?      @relation(fields: [appointmentId], references: [id])
+  householdId        String
+  household          Household         @relation(fields: [householdId], references: [id])
+  campRegistrationId String?           @unique
+  campRegistration   CampRegistration? @relation(fields: [campRegistrationId], references: [id])
+
+  amountCents           Int
+  currency              String           @default("usd")
+  status                PaymentStatus    @default(PENDING)
+  stripePaymentIntentId String?          @unique
+  stripeChargeId        String?
+  promoCodeId           String?
+  promoCode             PromoCode?       @relation(fields: [promoCodeId], references: [id])
+  discountCents         Int?             @default(0)
+  giftCertificateId     String?
+  giftCertificate       GiftCertificate? @relation(fields: [giftCertificateId], references: [id])
+
+  failureReason            String?
+  refundedAt               DateTime?
+  creditedAt               DateTime? // set when AIO/coach cancels; payment becomes a transferable credit
+  creditReason             String?
+  redeemedAt               DateTime? // set once this credit has been applied to a new appointment
+  redeemedForAppointmentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  policyAcceptance PaymentPolicyAcceptance?
+
+  @@index([status])
+}
+
+model PaymentPolicyAcceptance {
+  id            String   @id @default(cuid())
+  paymentId     String   @unique
+  payment       Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  userId        String
+  policyVersion String // e.g. "2026-01-v1"
+  acceptedAt    DateTime @default(now())
+  ipAddress     String?
+  userAgent     String?
+}
+
+enum PackageType {
+  SINGLE_SESSION
+  MULTI_SESSION
+  MONTHLY
+  GROUP
+  CAMP
+  TEAM
+  PROMOTIONAL
+}
+
+model Package {
+  id                String           @id @default(cuid())
+  name              String
+  type              PackageType
+  description       String?
+  sportId           String?
+  trainingProgramId String?
+  trainingProgram   TrainingProgram? @relation(fields: [trainingProgramId], references: [id])
+  sessionCount      Int? // null = unlimited/monthly
+  priceCents        Int
+  isPublished       Boolean          @default(true)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  balances PackageBalance[]
+}
+
+model PackageBalance {
+  id                String    @id @default(cuid())
+  householdId       String
+  household         Household @relation(fields: [householdId], references: [id])
+  packageId         String
+  package           Package   @relation(fields: [packageId], references: [id])
+  sessionsRemaining Int?
+  purchasedAt       DateTime  @default(now())
+  expiresAt         DateTime?
+
+  @@index([householdId])
+}
+
+// ---------------------------------------------------------------------------
+// WAITLIST ENGINE
+// ---------------------------------------------------------------------------
+
+enum WaitlistStatus {
+  OPEN
+  FULFILLED
+  EXHAUSTED
+  CANCELLED
+}
+
+model Waitlist {
+  id               String         @id @default(cuid())
+  sportId          String
+  sport            Sport          @relation(fields: [sportId], references: [id])
+  coachId          String?
+  coach            Coach?         @relation(fields: [coachId], references: [id])
+  desiredDate      DateTime?
+  desiredTimeStart String? // "16:00"
+  desiredTimeEnd   String?
+  flexible         Boolean        @default(false)
+  status           WaitlistStatus @default(OPEN)
+  createdAt        DateTime       @default(now())
+
+  entries WaitlistEntry[]
+}
+
+model WaitlistEntry {
+  id              String   @id @default(cuid())
+  waitlistId      String
+  waitlist        Waitlist @relation(fields: [waitlistId], references: [id], onDelete: Cascade)
+  athleteId       String
+  athlete         Athlete  @relation(fields: [athleteId], references: [id])
+  coachId         String?
+  coach           Coach?   @relation(fields: [coachId], references: [id])
+  position        Int // order in queue, 1 = first
+  joinedAt        DateTime @default(now())
+  notifiedOfferId String?  @unique
+
+  offers WaitlistOffer[]
+
+  @@index([waitlistId, position])
+}
+
+enum WaitlistOfferStatus {
+  OFFERED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model WaitlistOffer {
+  id            String              @id @default(cuid())
+  entryId       String
+  entry         WaitlistEntry       @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  appointmentId String              @unique
+  appointment   Appointment         @relation(fields: [appointmentId], references: [id])
+  offeredAt     DateTime            @default(now())
+  expiresAt     DateTime // offeredAt + 15 minutes
+  status        WaitlistOfferStatus @default(OFFERED)
+  respondedAt   DateTime?
+
+  @@index([status, expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// NOTIFICATIONS
+// ---------------------------------------------------------------------------
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  RESCHEDULE_WINDOW_72H
+  REMINDER_24H
+  REMINDER_2H
+  POST_SESSION_FOLLOWUP
+  WAITLIST_OFFER
+  WAITLIST_EXPIRED
+  CONTRACTOR_STATUS_CHANGE
+  COACH_SUBSTITUTION
+  ADMIN_ALERT
+  GENERIC
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED_NOT_CONFIGURED
+}
+
+model Notification {
+  id                   String              @id @default(cuid())
+  userId               String?
+  user                 User?               @relation(fields: [userId], references: [id])
+  channel              NotificationChannel
+  type                 NotificationType
+  subject              String?
+  body                 String
+  status               NotificationStatus  @default(PENDING)
+  sentAt               DateTime?
+  errorMessage         String?
+  relatedAppointmentId String? // used to dedupe scheduled reminders per appointment
+  createdAt            DateTime            @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([relatedAppointmentId, type])
+}
+
+model Message {
+  id            String    @id @default(cuid())
+  senderId      String
+  sender        User      @relation("MessageSender", fields: [senderId], references: [id])
+  recipientRole Role? // for broad household<->coach threads use a threadKey instead
+  threadKey     String // e.g. `${householdId}:${coachId}` or `household:${id}` for admin thread
+  body          String
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([threadKey])
+}
+
+// ---------------------------------------------------------------------------
+// WAIVERS
+// ---------------------------------------------------------------------------
+
+enum WaiverType {
+  PARTICIPATION
+  LIABILITY_RELEASE
+  PARENT_GUARDIAN_CONSENT
+  MEDICAL_ACKNOWLEDGMENT
+  PHOTO_VIDEO_RELEASE
+}
+
+model WaiverSignature {
+  id               String     @id @default(cuid())
+  athleteId        String
+  athlete          Athlete    @relation(fields: [athleteId], references: [id])
+  householdId      String
+  household        Household  @relation(fields: [householdId], references: [id])
+  type             WaiverType
+  signedName       String
+  signatureData    String // base64 signature or typed legal name
+  agreementVersion String
+  signedAt         DateTime   @default(now())
+  ipAddress        String?
+  userAgent        String?
+
+  @@index([athleteId])
+}
+
+// ---------------------------------------------------------------------------
+// EVALUATIONS / PROGRESS / SESSION NOTES / ATTENDANCE
+// ---------------------------------------------------------------------------
+
+model Evaluation {
+  id             String   @id @default(cuid())
+  athleteId      String
+  athlete        Athlete  @relation(fields: [athleteId], references: [id])
+  coachId        String
+  coach          Coach    @relation(fields: [coachId], references: [id])
+  sportId        String?
+  evaluationDate DateTime @default(now())
+  metrics        Json // flexible sport-specific measurements e.g. { "40yd_dash": 4.9, "vertical_jump_in": 28 }
+  coachRating    Int? // 1-5
+  notes          String?
+  isBaseline     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([athleteId])
+}
+
+model ProgressMetric {
+  id              String   @id @default(cuid())
+  athleteId       String
+  athlete         Athlete  @relation(fields: [athleteId], references: [id])
+  metricKey       String // e.g. "40yd_dash"
+  metricLabel     String
+  value           Float
+  unit            String?
+  recordedAt      DateTime @default(now())
+  visibleToClient Boolean  @default(true)
+
+  @@index([athleteId, metricKey])
+}
+
+model SessionNote {
+  id            String      @id @default(cuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  athleteId     String
+  athlete       Athlete     @relation(fields: [athleteId], references: [id])
+  coachId       String
+  coach         Coach       @relation(fields: [coachId], references: [id])
+
+  attendanceStatus          String? // mirrors Attendance.status at time of note
+  skillsTrained             String?
+  strengths                 String?
+  areasForImprovement       String?
+  drillsCompleted           String?
+  atHomeAssignments         String?
+  coachComments             String?
+  nextSessionRecommendation String?
+  internalNotes             String? // never shown to client
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([athleteId])
+}
+
+enum AttendanceStatus {
+  SCHEDULED
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  RESCHEDULED
+  CLIENT_CANCELLED
+  COACH_CANCELLED
+  LATE_CANCELLATION
+  NO_SHOW
+}
+
+model Attendance {
+  id            String           @id @default(cuid())
+  appointmentId String           @unique
+  appointment   Appointment      @relation(fields: [appointmentId], references: [id])
+  status        AttendanceStatus @default(SCHEDULED)
+  checkedInAt   DateTime?
+  updatedAt     DateTime         @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// COACH COMPENSATION / EARNINGS / PAYOUTS
+// ---------------------------------------------------------------------------
+
+model CoachCompensationRule {
+  id              String           @id @default(cuid())
+  coachId         String           @unique
+  type            CompensationType
+  flatAmountCents Int?
+  percentageBps   Int?
+  hourlyRateCents Int?
+  notes           String?
+  updatedAt       DateTime         @updatedAt
+}
+
+model CoachEarning {
+  id               String      @id @default(cuid())
+  coachId          String
+  coach            Coach       @relation(fields: [coachId], references: [id])
+  appointmentId    String      @unique
+  appointment      Appointment @relation(fields: [appointmentId], references: [id])
+  grossAmountCents Int
+  coachAmountCents Int
+  orgAmountCents   Int
+  status           String      @default("owed") // owed | paid
+  payoutId         String?
+  payout           Payout?     @relation(fields: [payoutId], references: [id])
+  createdAt        DateTime    @default(now())
+
+  @@index([coachId])
+}
+
+model Payout {
+  id          String    @id @default(cuid())
+  coachId     String
+  coach       Coach     @relation(fields: [coachId], references: [id])
+  amountCents Int
+  periodStart DateTime
+  periodEnd   DateTime
+  paidAt      DateTime?
+  method      String? // e.g. "ACH", "check", "manual"
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  earnings CoachEarning[]
+
+  @@index([coachId])
+}
+
+// ---------------------------------------------------------------------------
+// CAMPS & CLINICS
+// ---------------------------------------------------------------------------
+
+model Camp {
+  id                   String    @id @default(cuid())
+  name                 String
+  description          String?
+  sportId              String?
+  sport                Sport?    @relation(fields: [sportId], references: [id])
+  locationId           String?
+  location             Location? @relation(fields: [locationId], references: [id])
+  startsAt             DateTime
+  endsAt               DateTime
+  priceCents           Int
+  maxParticipants      Int
+  registrationDeadline DateTime?
+  minAge               Int?
+  maxAge               Int?
+  isPublished          Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  coaches       CampCoach[]
+  registrations CampRegistration[]
+}
+
+model CampCoach {
+  id      String @id @default(cuid())
+  campId  String
+  camp    Camp   @relation(fields: [campId], references: [id], onDelete: Cascade)
+  coachId String
+  coach   Coach  @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@unique([campId, coachId])
+}
+
+enum CampRegistrationStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  WAITLISTED
+}
+
+model CampRegistration {
+  id        String                 @id @default(cuid())
+  campId    String
+  camp      Camp                   @relation(fields: [campId], references: [id])
+  athleteId String
+  status    CampRegistrationStatus @default(PENDING_PAYMENT)
+  createdAt DateTime               @default(now())
+
+  payment Payment?
+  athlete Athlete  @relation(fields: [athleteId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// PROMO CODES / GIFT CERTIFICATES
+// ---------------------------------------------------------------------------
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model PromoCode {
+  id             String       @id @default(cuid())
+  code           String       @unique
+  discountType   DiscountType
+  percentOff     Int? // 0-100
+  amountOffCents Int?
+  maxUses        Int?
+  usesCount      Int          @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  applicablePrograms PromoCodeSport[]
+  payments           Payment[]
+}
+
+model PromoCodeSport {
+  id          String    @id @default(cuid())
+  promoCodeId String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  sportId     String
+  sport       Sport     @relation(fields: [sportId], references: [id], onDelete: Cascade)
+
+  @@unique([promoCodeId, sportId])
+}
+
+model GiftCertificate {
+  id                  String    @id @default(cuid())
+  code                String    @unique
+  initialValueCents   Int
+  remainingValueCents Int
+  purchaserEmail      String?
+  recipientEmail      String?
+  isActive            Boolean   @default(true)
+  expiresAt           DateTime?
+  createdAt           DateTime  @default(now())
+
+  payments Payment[]
+}
+
+// ---------------------------------------------------------------------------
+// REVIEWS
+// ---------------------------------------------------------------------------
+
+model Review {
+  id               String      @id @default(cuid())
+  appointmentId    String      @unique
+  appointment      Appointment @relation(fields: [appointmentId], references: [id])
+  userId           String
+  user             User        @relation(fields: [userId], references: [id])
+  rating           Int // 1-5
+  feedback         String?
+  isApprovedPublic Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+
+  @@index([isApprovedPublic])
+}
+
+// ---------------------------------------------------------------------------
+// AUDIT LOG
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actor       User?    @relation("AuditActor", fields: [actorId], references: [id])
+  action      String // e.g. "appointment.reassigned", "contractor.approved"
+  recordType  String
+  recordId    String
+  beforeValue Json?
+  afterValue  Json?
+  createdAt   DateTime @default(now())
+
+  @@index([recordType, recordId])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// SETTINGS / WEBSITE CONTENT
+// ---------------------------------------------------------------------------
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model WebsiteContent {
+  key       String   @id // e.g. "home.hero", "about.body"
+  value     Json
+  updatedAt DateTime @updatedAt
+}
