@@ -9,6 +9,7 @@ type FreedSlot = {
   sportId: string;
   coachId: string;
   startsAt: Date;
+  durationMinutes: number;
   priceCents: number;
 };
 
@@ -55,6 +56,7 @@ export async function offerSlotToWaitlistQueue(waitlistId: string, slot: FreedSl
         coachId: slot.coachId,
         sportId: slot.sportId,
         startsAt: slot.startsAt,
+        durationMinutes: slot.durationMinutes,
         priceCents: slot.priceCents,
         source: "WAITLIST_OFFER",
       });
@@ -130,6 +132,7 @@ export async function expireStaleWaitlistOffers(): Promise<number> {
       sportId: offer.appointment.sportId,
       coachId: offer.appointment.coachId,
       startsAt: offer.appointment.startsAt,
+      durationMinutes: (offer.appointment.endsAt.getTime() - offer.appointment.startsAt.getTime()) / 60_000,
       priceCents: offer.appointment.priceCents,
     });
   }
@@ -153,6 +156,7 @@ export async function declineWaitlistOffer(offerId: string) {
     sportId: offer.appointment.sportId,
     coachId: offer.appointment.coachId,
     startsAt: offer.appointment.startsAt,
+    durationMinutes: (offer.appointment.endsAt.getTime() - offer.appointment.startsAt.getTime()) / 60_000,
     priceCents: offer.appointment.priceCents,
   });
 }

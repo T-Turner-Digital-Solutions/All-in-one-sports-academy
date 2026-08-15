@@ -16,12 +16,14 @@ type Coach = { id: string; firstName: string; lastName: string; bio: string | nu
 
 const STEPS = ["Athlete", "Sport", "Training Type", "Coach", "Date & Time", "Review", "Payment", "Confirmed"];
 
+const HOUR_OPTIONS = [1, 2, 3, 4];
+
 export function BookingWizard({
   sports,
   trainingPrograms,
   athletes,
   loggedIn,
-  priceCents,
+  pricePerHourCents,
   isStripeConfigured,
   initialSportId,
   initialCoachId,
@@ -30,7 +32,7 @@ export function BookingWizard({
   trainingPrograms: Program[];
   athletes: Athlete[];
   loggedIn: boolean;
-  priceCents: number;
+  pricePerHourCents: number;
   isStripeConfigured: boolean;
   initialSportId?: string;
   initialCoachId?: string;
@@ -42,11 +44,14 @@ export function BookingWizard({
   const [trainingProgramId, setTrainingProgramId] = useState<string | null>(null);
   const [coachId, setCoachId] = useState<string | null>(initialCoachId ?? null);
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [hours, setHours] = useState(1);
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [slots, setSlots] = useState<string[] | null>(null);
   const [startsAt, setStartsAt] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [policyAgreed, setPolicyAgreed] = useState(false);
+
+  const priceCents = pricePerHourCents * hours;
 
   const [holdState, holdAction, holdPending] = useActionState<HoldState, FormData>(createHoldAction, {});
   const [checkoutState, checkoutAction, checkoutPending] = useActionState<CheckoutState, FormData>(
@@ -72,11 +77,12 @@ export function BookingWizard({
     if (!coachId || !selectedDate) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- standard fetch-on-change loading flag
     setLoadingSlots(true);
-    fetch(`/api/booking/availability?coachId=${coachId}&date=${selectedDate}`)
+    setStartsAt(null); // a previously-picked time may no longer fit the new duration
+    fetch(`/api/booking/availability?coachId=${coachId}&date=${selectedDate}&hours=${hours}`)
       .then((r) => r.json())
       .then((d) => setSlots(d.slots ?? []))
       .finally(() => setLoadingSlots(false));
-  }, [coachId, selectedDate]);
+  }, [coachId, selectedDate, hours]);
 
   // Hold created — advance to payment step and start countdown.
   useEffect(() => {
@@ -241,6 +247,24 @@ export function BookingWizard({
 
       {step === 4 ? (
         <StepBlock title="Select Date & Time">
+          <div className="mb-6">
+            <p className="mb-2 text-xs uppercase tracking-wide text-aio-silver">
+              Session Length — {formatCents(pricePerHourCents)}/hr
+            </p>
+            <div className="flex gap-2">
+              {HOUR_OPTIONS.map((h) => (
+                <button
+                  key={h}
+                  onClick={() => setHours(h)}
+                  className={`border px-4 py-2 text-sm font-display ${
+                    hours === h ? "border-aio-red bg-aio-red/10 text-aio-red" : "border-white/15"
+                  }`}
+                >
+                  {h} hr{h > 1 ? "s" : ""}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {next14Days.map((d) => {
               const iso = d.toISOString().slice(0, 10);
@@ -327,7 +351,8 @@ export function BookingWizard({
             />
             <Row label="Coach" value={coach ? `${coach.firstName} ${coach.lastName}` : "—"} />
             <Row label="Date & Time" value={startsAt ? formatDateTime(startsAt) : "—"} />
-            <Row label="Price" value={formatCents(priceCents)} />
+            <Row label="Duration" value={`${hours} hour${hours > 1 ? "s" : ""}`} />
+            <Row label="Price" value={`${formatCents(priceCents)} (${formatCents(pricePerHourCents)}/hr)`} />
           </div>
           {holdState.error ? <p className="mt-4 text-sm text-aio-red">{holdState.error}</p> : null}
           <form
@@ -337,6 +362,7 @@ export function BookingWizard({
               if (trainingProgramId) fd.set("trainingProgramId", trainingProgramId);
               fd.set("coachId", coachId ?? "");
               fd.set("startsAt", startsAt ?? "");
+              fd.set("hours", String(hours));
               startTransition(() => holdAction(fd));
             }}
           >

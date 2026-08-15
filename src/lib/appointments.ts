@@ -75,6 +75,7 @@ export async function cancelAppointment(args: {
     sportId: appointment.sportId,
     coachId: appointment.coachId,
     startsAt: appointment.startsAt,
+    durationMinutes: (appointment.endsAt.getTime() - appointment.startsAt.getTime()) / 60_000,
     priceCents: appointment.priceCents,
   });
 
@@ -149,6 +150,7 @@ export async function rescheduleAppointment(args: {
     sportId: appointment.sportId,
     coachId: appointment.coachId,
     startsAt: appointment.startsAt,
+    durationMinutes: (appointment.endsAt.getTime() - appointment.startsAt.getTime()) / 60_000,
     priceCents: appointment.priceCents,
   });
 

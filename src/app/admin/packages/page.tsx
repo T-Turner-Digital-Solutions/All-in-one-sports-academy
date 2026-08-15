@@ -13,8 +13,8 @@ export default async function AdminPackagesPage() {
       <div>
         <h1 className="font-display text-3xl font-bold">Packages</h1>
         <p className="mt-1 text-xs text-aio-silver">
-          Only the $80 single-session price is fixed by the business — every other package price is
-          fully admin-controlled.
+          Only the $80/hour training rate is fixed by the business — clients choose how many hours to
+          book, and every other package price is fully admin-controlled.
         </p>
       </div>
       <CreatePackageForm />

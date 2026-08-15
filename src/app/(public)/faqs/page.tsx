@@ -5,7 +5,7 @@ export const metadata = { title: "FAQs" };
 const FAQS = [
   {
     q: "How much does a private training session cost?",
-    a: "Standard private training sessions are $80 per session. Packages and group/camp pricing are set by Academy admin and shown on the Packages and Camps & Clinics pages.",
+    a: "Standard private training is $80 per hour — you choose how many hours to book when scheduling. Packages and group/camp pricing are set by Academy admin and shown on the Packages and Camps & Clinics pages.",
   },
   {
     q: "How do I book a session?",

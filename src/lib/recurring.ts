@@ -20,7 +20,7 @@ function addFrequency(date: Date, frequency: string): Date {
  * (and reports) any occurrence that collides with an existing booking.
  */
 export async function generateRecurringOccurrences(recurring: RecurringAppointment) {
-  const priceCents = await getSinglSessionPriceCents();
+  const pricePerHourCents = await getSinglSessionPriceCents();
   const horizon = new Date();
   horizon.setDate(horizon.getDate() + GENERATION_HORIZON_DAYS);
   const cap = recurring.endDate && recurring.endDate < horizon ? recurring.endDate : horizon;
@@ -32,6 +32,8 @@ export async function generateRecurringOccurrences(recurring: RecurringAppointme
   }
   const [startHour, startMin] = recurring.startTime.split(":").map(Number);
   const [endHour, endMin] = recurring.endTime.split(":").map(Number);
+  const durationHours = (endHour * 60 + endMin - (startHour * 60 + startMin)) / 60;
+  const priceCents = recurring.paymentArrangement === "ADMIN_RESERVED" ? 0 : Math.round(pricePerHourCents * durationHours);
 
   let cursor = new Date(first);
   let created = 0;
@@ -60,7 +62,7 @@ export async function generateRecurringOccurrences(recurring: RecurringAppointme
           endsAt,
           status: "SCHEDULED",
           source: "RECURRING",
-          priceCents: recurring.paymentArrangement === "ADMIN_RESERVED" ? 0 : priceCents,
+          priceCents,
           recurringAppointmentId: recurring.id,
         },
       });

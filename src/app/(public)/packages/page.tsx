@@ -31,7 +31,7 @@ export default async function PackagesPage() {
         <SectionHeading
           eyebrow="Packages"
           title="Training Packages"
-          subtitle="All pricing is set and controlled by Academy admin. Only the $80 single session price is fixed today — additional packages appear here as Justin adds them."
+          subtitle="All pricing is set and controlled by Academy admin. Only the $80/hour training rate is fixed today — you choose how many hours to book, and additional packages appear here as Justin adds them."
         />
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map((pkg) => (

@@ -42,7 +42,7 @@ export default async function ProgramsPage() {
         </div>
         <div className="mt-12 text-center">
           <ButtonLink href="/book" size="lg">
-            Book Training — $80
+            Book Training — $80/hr
           </ButtonLink>
         </div>
       </Container>

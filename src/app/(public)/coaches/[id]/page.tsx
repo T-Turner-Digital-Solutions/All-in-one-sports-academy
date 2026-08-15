@@ -48,7 +48,7 @@ export default async function CoachDetailPage({ params }: { params: Promise<{ id
         </div>
 
         <ButtonLink href={`/book?coach=${coach.id}`} className="mt-8">
-          Book with {coach.user.firstName} — $80
+          Book with {coach.user.firstName} — $80/hr
         </ButtonLink>
 
         <div className="mt-16 grid gap-10 sm:grid-cols-2">
