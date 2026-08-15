@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Container, SectionHeading } from "@/components/ui/Container";
 import { ButtonLink } from "@/components/ui/Button";
 import { formatCents } from "@/lib/format";
+import { GeneralAvailabilityCalendar } from "@/components/booking/GeneralAvailabilityCalendar";
 
 export const metadata = { title: "Packages" };
 // force-dynamic (not ISR): this page queries the database, and the
@@ -44,6 +45,18 @@ export default async function PackagesPage() {
             subtitle="All pricing is set and controlled by Academy admin. Only the $80/hour training rate is fixed today — you choose how many hours to book, and additional packages appear here as Justin adds them."
             light
           />
+        </Container>
+      </section>
+
+      <section className="border-b border-white/10 py-16">
+        <Container className="grid gap-10 lg:grid-cols-2 lg:items-center">
+          <SectionHeading
+            eyebrow="Availability"
+            title="See What's Open"
+            subtitle="A quick look at upcoming availability across the academy. Book to see exact times and pick your coach."
+            light
+          />
+          <GeneralAvailabilityCalendar />
         </Container>
       </section>
 
