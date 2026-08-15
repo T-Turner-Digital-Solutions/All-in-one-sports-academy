@@ -30,7 +30,6 @@ export default async function HomePage() {
     <>
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-white/10 bg-aio-black">
-        <div className="aio-speed-lines" />
         <div className="aio-wind-glow aio-gradient-red aio-animate-drift h-[420px] w-[420px] -left-32 -top-32" />
         <div className="aio-wind-glow aio-gradient-silver h-[360px] w-[360px] right-[-120px] top-40" />
         <Container className="relative grid gap-12 py-20 lg:grid-cols-2 lg:items-center lg:py-28">
@@ -65,7 +64,7 @@ export default async function HomePage() {
               alt="All In One Sports Academy — football, basketball, baseball, soccer, and more"
               width={1200}
               height={1200}
-              className="w-full drop-shadow-[0_0_60px_rgba(224,18,24,0.25)]"
+              className="aio-fade-sides w-full drop-shadow-[0_0_60px_rgba(224,18,24,0.25)]"
               priority
             />
           </div>
@@ -174,7 +173,6 @@ export default async function HomePage() {
 
       {/* CTA BANNER */}
       <section className="relative overflow-hidden bg-aio-red py-16">
-        <div className="aio-speed-lines opacity-30" />
         <Container className="relative flex flex-col items-center gap-6 text-center">
           <h2 className="max-w-2xl text-3xl font-bold text-white sm:text-4xl">
             Ready to train like a pro? Book your session today.
