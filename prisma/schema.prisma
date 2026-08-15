@@ -73,11 +73,28 @@ model Household {
   updatedAt DateTime @updatedAt
 
   members         User[]
+  contacts        HouseholdContact[]
   athletes        Athlete[]
   appointments    Appointment[]
   payments        Payment[]
   packageBalances PackageBalance[]
   waivers         WaiverSignature[]
+}
+
+// Notification-only household contact (e.g. a second parent/guardian) --
+// receives appointment reminders and payment receipts alongside the
+// household's login-capable members, but has no account of their own.
+model HouseholdContact {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  createdAt   DateTime  @default(now())
+
+  @@index([householdId])
 }
 
 enum ExperienceLevel {
@@ -730,6 +747,10 @@ model Notification {
   id                   String              @id @default(cuid())
   userId               String?
   user                 User?               @relation(fields: [userId], references: [id])
+  // Email address or phone number actually used for this send. Needed for
+  // recipients with no `user` (e.g. a notification-only HouseholdContact) so
+  // the admin notification log can still show who a message went to.
+  to                   String?
   channel              NotificationChannel
   type                 NotificationType
   subject              String?

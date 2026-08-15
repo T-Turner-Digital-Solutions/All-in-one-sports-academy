@@ -37,7 +37,10 @@ export default async function AdminNotificationsPage() {
             {notifications.map((n) => (
               <tr key={n.id} className="border-b border-white/5">
                 <td className="py-2 pr-4 whitespace-nowrap">{formatDateTime(n.createdAt)}</td>
-                <td className="py-2 pr-4">{n.user ? `${n.user.firstName} ${n.user.lastName}` : "—"}</td>
+                <td className="py-2 pr-4">
+                  {n.user ? `${n.user.firstName} ${n.user.lastName}` : "Contact"}
+                  {n.to ? <span className="text-aio-silver"> · {n.to}</span> : null}
+                </td>
                 <td className="py-2 pr-4">{n.channel}</td>
                 <td className="py-2 pr-4">{n.type.replaceAll("_", " ")}</td>
                 <td className={`py-2 pr-4 ${n.status === "FAILED" ? "text-aio-red" : n.status === "SENT" ? "text-green-500" : "text-aio-silver"}`}>

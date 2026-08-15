@@ -31,3 +31,10 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[functions]
+  # netlify/functions/reminders-cron.mts fires the appointment-reminder pass
+  # hourly (see its own `schedule` export) -- nothing else triggers
+  # /api/cron/reminders on a schedule, so this is required for reminders to
+  # actually go out on their own rather than only when hit manually.
+  directory = "netlify/functions"
