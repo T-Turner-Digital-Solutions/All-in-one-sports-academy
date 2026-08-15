@@ -107,10 +107,26 @@ export default async function HomePage() {
                 <Link
                   key={sport.id}
                   href={`/sports/${sport.slug}`}
-                  className="group relative flex h-32 items-end overflow-hidden border border-black/10 bg-aio-black p-4 transition-transform hover:-translate-y-1"
+                  className="group relative flex h-40 items-end overflow-hidden border border-black/10 bg-aio-black transition-transform hover:-translate-y-1"
                 >
-                  <div className="aio-wind-glow aio-gradient-red h-32 w-32 -right-10 -top-10 opacity-20 transition-opacity group-hover:opacity-40" />
-                  <span className="relative font-display text-lg font-bold text-white group-hover:text-aio-red">
+                  {sport.imageUrl ? (
+                    <Image
+                      src={sport.imageUrl}
+                      alt={sport.name}
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      className="object-cover opacity-80 transition-transform duration-300 group-hover:scale-105 group-hover:opacity-100"
+                    />
+                  ) : (
+                    <div className="aio-wind-glow aio-gradient-red h-32 w-32 -right-10 -top-10 opacity-20 transition-opacity group-hover:opacity-40" />
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                  {sport.slug === "soccer" ? (
+                    <span className="absolute right-3 top-3 rotate-3 border border-aio-red bg-aio-black/80 px-2 py-1 font-display text-[10px] font-bold uppercase tracking-widest text-aio-red">
+                      Coming Soon
+                    </span>
+                  ) : null}
+                  <span className="relative p-4 font-display text-lg font-bold text-white group-hover:text-aio-red">
                     {sport.name}
                   </span>
                 </Link>
