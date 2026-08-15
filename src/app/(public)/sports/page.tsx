@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { Container, SectionHeading } from "@/components/ui/Container";
 
 export const metadata = { title: "Sports" };
-export const revalidate = 60;
+// force-dynamic (not ISR): this page queries the database, and the
+// production build environment has no DB access — only the running
+// server does. Static/ISR rendering would fail `next build` outright.
+export const dynamic = "force-dynamic";
 
 export default async function SportsPage() {
   const sports = await prisma.sport.findMany({

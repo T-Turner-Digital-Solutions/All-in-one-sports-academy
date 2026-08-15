@@ -4,7 +4,10 @@ import { ButtonLink } from "@/components/ui/Button";
 import { formatCents, formatDateTime } from "@/lib/format";
 
 export const metadata = { title: "Camps & Clinics" };
-export const revalidate = 30;
+// force-dynamic (not ISR): this page queries the database, and the
+// production build environment has no DB access — only the running
+// server does. Static/ISR rendering would fail `next build` outright.
+export const dynamic = "force-dynamic";
 
 export default async function CampsPage() {
   const camps = await prisma.camp.findMany({

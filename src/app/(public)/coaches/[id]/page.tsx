@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { Container } from "@/components/ui/Container";
 import { ButtonLink } from "@/components/ui/Button";
 
-export const revalidate = 60;
+// force-dynamic (not ISR): this page queries the database, and the
+// production build environment has no DB access — only the running
+// server does. Static/ISR rendering would fail `next build` outright.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

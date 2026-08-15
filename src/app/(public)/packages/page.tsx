@@ -4,7 +4,10 @@ import { ButtonLink } from "@/components/ui/Button";
 import { formatCents } from "@/lib/format";
 
 export const metadata = { title: "Packages" };
-export const revalidate = 60;
+// force-dynamic (not ISR): this page queries the database, and the
+// production build environment has no DB access — only the running
+// server does. Static/ISR rendering would fail `next build` outright.
+export const dynamic = "force-dynamic";
 
 const TYPE_LABEL: Record<string, string> = {
   SINGLE_SESSION: "Single Session",

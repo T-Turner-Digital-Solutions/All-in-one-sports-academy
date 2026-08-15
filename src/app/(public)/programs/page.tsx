@@ -3,7 +3,10 @@ import { Container, SectionHeading } from "@/components/ui/Container";
 import { ButtonLink } from "@/components/ui/Button";
 
 export const metadata = { title: "Training Programs" };
-export const revalidate = 60;
+// force-dynamic (not ISR): this page queries the database, and the
+// production build environment has no DB access — only the running
+// server does. Static/ISR rendering would fail `next build` outright.
+export const dynamic = "force-dynamic";
 
 export default async function ProgramsPage() {
   const programs = await prisma.trainingProgram.findMany({
