@@ -123,6 +123,60 @@ export async function getAvailableSlotsForCoachOnDate(
   return slots.sort((a, b) => a.getTime() - b.getTime());
 }
 
+/**
+ * Which dates (YYYY-MM-DD) in [startDate, startDate + days) have at least
+ * one open slot of the given duration for a specific coach. Used to mark
+ * fully-booked/unavailable dates on the booking calendar.
+ */
+export async function getAvailableDatesForCoach(
+  coachId: string,
+  startDate: Date,
+  days: number,
+  durationMinutes: number = SESSION_LENGTH_MINUTES
+): Promise<string[]> {
+  const dates = Array.from({ length: days }, (_, i) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const results = await Promise.all(
+    dates.map(async (date) => {
+      const slots = await getAvailableSlotsForCoachOnDate(coachId, date, durationMinutes);
+      return { iso: date.toISOString().slice(0, 10), available: slots.length > 0 };
+    })
+  );
+
+  return results.filter((r) => r.available).map((r) => r.iso);
+}
+
+/**
+ * Which dates (YYYY-MM-DD) in [startDate, startDate + days) have at least
+ * one open 1-hour slot with ANY active coach. Used for the general
+ * "upcoming availability" calendar shown where no specific coach has been
+ * chosen yet (e.g. the Packages page).
+ */
+export async function getAvailableDatesAcrossAcademy(startDate: Date, days: number): Promise<string[]> {
+  const coaches = await prisma.coach.findMany({ where: { status: "ACTIVE" }, select: { id: true } });
+  if (coaches.length === 0) return [];
+
+  const dates = Array.from({ length: days }, (_, i) => {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const results = await Promise.all(
+    dates.map(async (date) => {
+      const perCoach = await Promise.all(coaches.map((c) => getAvailableSlotsForCoachOnDate(c.id, date)));
+      const available = perCoach.some((slots) => slots.length > 0);
+      return { iso: date.toISOString().slice(0, 10), available };
+    })
+  );
+
+  return results.filter((r) => r.available).map((r) => r.iso);
+}
+
 export class SlotUnavailableError extends Error {
   constructor(message = "This time slot is no longer available. Please pick another time.") {
     super(message);

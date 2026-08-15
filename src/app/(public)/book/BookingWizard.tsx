@@ -8,6 +8,9 @@ import { createHoldAction, completeCheckoutAction, type HoldState, type Checkout
 import { joinWaitlistAction, type JoinWaitlistState } from "@/lib/actions/waitlist";
 import { formatCents, formatDate, formatDateTime, calculateAge } from "@/lib/format";
 import { POLICY_ACCEPTANCE_TEXT } from "@/lib/policy";
+import { AvailabilityCalendar } from "@/components/booking/AvailabilityCalendar";
+
+const BOOKING_HORIZON_DAYS = 14;
 
 type Sport = { id: string; name: string; slug: string };
 type Program = { id: string; name: string; sportId: string | null };
@@ -49,7 +52,9 @@ export function BookingWizard({
   const [slots, setSlots] = useState<string[] | null>(null);
   const [startsAt, setStartsAt] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [availableDates, setAvailableDates] = useState<Set<string> | null>(null);
   const [policyAgreed, setPolicyAgreed] = useState(false);
+  const today = useMemo(() => new Date(), []);
 
   const priceCents = pricePerHourCents * hours;
 
@@ -72,6 +77,16 @@ export function BookingWizard({
       .then((r) => r.json())
       .then((d) => setCoaches(d.coaches ?? []));
   }, [sportId]);
+
+  useEffect(() => {
+    if (!coachId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a previous coach's summary shouldn't briefly apply to the new one
+    setAvailableDates(null);
+    const startDateIso = today.toISOString().slice(0, 10);
+    fetch(`/api/booking/availability-summary?coachId=${coachId}&startDate=${startDateIso}&days=${BOOKING_HORIZON_DAYS}&hours=${hours}`)
+      .then((r) => r.json())
+      .then((d) => setAvailableDates(new Set<string>(d.availableDates ?? [])));
+  }, [coachId, hours, today]);
 
   useEffect(() => {
     if (!coachId || !selectedDate) return;
@@ -104,14 +119,6 @@ export function BookingWizard({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs local wizard step to server-action result
     if (checkoutState.success) setStep(7);
   }, [checkoutState.success]);
-
-  const next14Days = useMemo(() => {
-    return Array.from({ length: 14 }).map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      return d;
-    });
-  }, []);
 
   if (!loggedIn) {
     return (
@@ -265,24 +272,20 @@ export function BookingWizard({
               ))}
             </div>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {next14Days.map((d) => {
-              const iso = d.toISOString().slice(0, 10);
-              return (
-                <button
-                  key={iso}
-                  onClick={() => {
-                    setSelectedDate(iso);
-                    setStartsAt(null);
-                  }}
-                  className={`shrink-0 border px-3 py-2 text-xs font-display uppercase ${
-                    selectedDate === iso ? "border-aio-red text-aio-red" : "border-white/15 text-aio-silver"
-                  }`}
-                >
-                  {d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                </button>
-              );
-            })}
+          <div className="max-w-xs">
+            <AvailabilityCalendar
+              startDate={today}
+              daysAhead={BOOKING_HORIZON_DAYS}
+              availableDates={availableDates}
+              selectedDate={selectedDate}
+              onSelect={(iso) => {
+                setSelectedDate(iso);
+                setStartsAt(null);
+              }}
+            />
+            <p className="mt-2 text-xs text-aio-silver">
+              <span className="text-aio-red/70">✕</span> = no {hours}-hour opening with {coach?.firstName ?? "this coach"} that day
+            </p>
           </div>
 
           <div className="mt-6">
