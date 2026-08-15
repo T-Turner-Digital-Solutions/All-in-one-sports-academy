@@ -30,21 +30,23 @@ export default async function PackagesPage() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10 bg-aio-black py-20">
-        <Image
-          src="/brand/aio-logo.png"
-          alt="All In One Sports Academy"
-          width={380}
-          height={380}
-          unoptimized
-          className="aio-fade-sides pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 opacity-10 sm:block"
-        />
-        <Container className="relative">
+        <Container className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <SectionHeading
             eyebrow="Packages"
             title="Training Packages"
             subtitle="All pricing is set and controlled by Academy admin. Only the $80/hour training rate is fixed today — you choose how many hours to book, and additional packages appear here as Justin adds them."
             light
           />
+          <div className="hidden items-center justify-center lg:flex">
+            <Image
+              src="/brand/aio-logo.png"
+              alt="All In One Sports Academy"
+              width={300}
+              height={300}
+              unoptimized
+              className="aio-fade-sides opacity-30"
+            />
+          </div>
         </Container>
       </section>
 
