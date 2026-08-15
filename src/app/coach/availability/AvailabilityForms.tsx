@@ -1,7 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { addRecurringAvailabilityAction, addBlockedTimeAction, type ActionState } from "@/lib/actions/availability";
+import {
+  addRecurringAvailabilityAction,
+  addBlockedTimeAction,
+  removeAvailabilityAction,
+  removeBlockedTimeAction,
+  type ActionState,
+} from "@/lib/actions/availability";
 import { Button } from "@/components/ui/Button";
 
 const initialState: ActionState = {};
@@ -68,6 +74,26 @@ export function AddBlockedTimeForm({ coachId }: { coachId: string }) {
         {pending ? "Blocking..." : "Block Time"}
       </Button>
       {state.error ? <p className="w-full text-xs text-aio-red">{state.error}</p> : null}
+    </form>
+  );
+}
+
+export function RemoveAvailabilityButton({ coachId, availabilityId }: { coachId: string; availabilityId: string }) {
+  return (
+    <form action={async () => removeAvailabilityAction(coachId, availabilityId)}>
+      <Button type="submit" size="sm" variant="ghost">
+        Remove
+      </Button>
+    </form>
+  );
+}
+
+export function RemoveBlockedTimeButton({ coachId, blockedTimeId }: { coachId: string; blockedTimeId: string }) {
+  return (
+    <form action={async () => removeBlockedTimeAction(coachId, blockedTimeId)}>
+      <Button type="submit" size="sm" variant="ghost">
+        Remove
+      </Button>
     </form>
   );
 }
