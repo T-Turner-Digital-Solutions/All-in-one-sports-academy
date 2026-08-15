@@ -15,7 +15,6 @@ export default function AboutPage() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10 bg-aio-black py-24">
-        <div className="aio-speed-lines" />
         <Container className="relative">
           <p className="font-display text-xs font-semibold tracking-[0.3em] text-aio-red">ABOUT THE ACADEMY</p>
           <h1 className="mt-4 max-w-3xl text-5xl font-bold">
