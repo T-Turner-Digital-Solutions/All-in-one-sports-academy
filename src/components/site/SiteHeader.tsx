@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
@@ -33,12 +33,30 @@ export function SiteHeader() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+  const loginMenuRef = useRef<HTMLDivElement>(null);
 
   // Portal target (document.body) only exists once mounted on the client.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- standard client-mount-detection idiom for portals
     setMounted(true);
   }, []);
+
+  // Close the login dropdown on an actual outside click, instead of on
+  // button blur + a timeout. Blur fires as soon as focus leaves the button
+  // (e.g. the instant a click starts on "Client Login", the item closest
+  // to and easiest to mis-time against the button), so the dropdown could
+  // close before the click on it finished registering -- a real reason
+  // taps on the first item wouldn't navigate anywhere.
+  useEffect(() => {
+    if (!loginOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (loginMenuRef.current && !loginMenuRef.current.contains(e.target as Node)) {
+        setLoginOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [loginOpen]);
 
   // The header has backdrop-blur, and CSS spec makes an element with
   // backdrop-filter the containing block for any `position: fixed`
@@ -124,20 +142,20 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden items-center gap-4 lg:flex">
-            <div className="relative">
+            <div ref={loginMenuRef} className="relative">
               <button
                 onClick={() => setLoginOpen((v) => !v)}
-                onBlur={() => setTimeout(() => setLoginOpen(false), 150)}
                 className="flex items-center gap-1 font-display text-xs font-semibold uppercase tracking-wide text-aio-silver-light hover:text-aio-white"
               >
                 Login <ChevronDown size={14} />
               </button>
               {loginOpen ? (
-                <div className="absolute right-0 top-full mt-2 w-44 border border-white/10 bg-aio-charcoal py-2 shadow-xl">
+                <div className="absolute right-0 top-full mt-4 w-44 border border-white/10 bg-aio-charcoal py-2 shadow-xl">
                   {LOGIN_LINKS.map((l) => (
                     <Link
                       key={l.href}
                       href={l.href}
+                      onClick={() => setLoginOpen(false)}
                       className="block px-4 py-2 text-sm text-aio-silver-light hover:bg-white/5 hover:text-aio-white"
                     >
                       {l.label}
