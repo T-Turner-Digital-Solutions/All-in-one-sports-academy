@@ -33,7 +33,7 @@ export function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="aio-header sticky top-0 z-50 overflow-hidden backdrop-blur">
+    <header className="aio-header sticky top-0 z-50 backdrop-blur">
       <Container className="relative flex h-16 items-center justify-between sm:h-20">
         <Link href="/" className="flex items-center gap-3">
           <Image
