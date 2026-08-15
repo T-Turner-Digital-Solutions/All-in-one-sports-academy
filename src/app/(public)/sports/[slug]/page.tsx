@@ -34,9 +34,11 @@ export default async function SportDetailPage({ params }: { params: Promise<{ sl
           <Image src={sport.imageUrl} alt={sport.name} fill priority sizes="100vw" className="object-cover opacity-80" />
           <div className="absolute inset-0 bg-gradient-to-t from-aio-black via-aio-black/30 to-transparent" />
           {sport.slug === "soccer" ? (
-            <span className="absolute right-4 top-4 rotate-3 border border-aio-red bg-aio-black/80 px-3 py-1.5 font-display text-xs font-bold uppercase tracking-widest text-aio-red">
-              Coming Soon
-            </span>
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+              <span className="-rotate-6 border-y-4 border-aio-red bg-aio-black px-6 py-3 text-center font-display text-3xl font-bold uppercase tracking-widest text-aio-red sm:text-4xl">
+                Coming Soon
+              </span>
+            </div>
           ) : null}
           <Container className="relative flex h-full flex-col justify-end pb-8">
             <p className="font-display text-xs font-semibold tracking-[0.3em] text-aio-red">SPORT</p>

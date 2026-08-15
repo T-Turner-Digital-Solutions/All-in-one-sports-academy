@@ -122,9 +122,11 @@ export default async function HomePage() {
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/60 to-transparent" />
                   {sport.slug === "soccer" ? (
-                    <span className="absolute right-3 top-3 rotate-3 border border-aio-red bg-aio-black/80 px-2 py-1 font-display text-[10px] font-bold uppercase tracking-widest text-aio-red">
-                      Coming Soon
-                    </span>
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+                      <span className="-rotate-6 border-y-2 border-aio-red bg-aio-black px-3 py-1.5 text-center font-display text-lg font-bold uppercase tracking-widest text-aio-red sm:text-xl">
+                        Coming Soon
+                      </span>
+                    </div>
                   ) : null}
                   <span className="relative p-4 font-display text-lg font-bold text-white group-hover:text-aio-red">
                     {sport.name}
