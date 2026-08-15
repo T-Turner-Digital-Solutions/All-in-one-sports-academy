@@ -2,45 +2,19 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import type { Role } from "@prisma/client";
+import { authConfig } from "@/lib/auth.config";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      email: string;
-      role: Role;
-      firstName: string;
-      lastName: string;
-      coachId?: string | null;
-      householdId?: string | null;
-    };
-  }
-  interface User {
-    role: Role;
-    firstName: string;
-    lastName: string;
-    coachId?: string | null;
-    householdId?: string | null;
-  }
-}
-
-declare module "@auth/core/jwt" {
-  interface JWT {
-    role: Role;
-    firstName: string;
-    lastName: string;
-    coachId?: string | null;
-    householdId?: string | null;
-    uid: string;
-  }
-}
-
+/**
+ * Full Node.js auth instance — used by the API route handler
+ * (src/app/api/auth/[...nextauth]/route.ts) and everywhere in server
+ * components/server actions that call auth(). This is the only file allowed
+ * to import Prisma/bcrypt alongside NextAuth: it must NEVER be imported from
+ * src/proxy.ts (Next.js Middleware runs on the Edge runtime, which cannot
+ * load Prisma's native query engine binary). Middleware uses the separate
+ * edge-safe instance in src/lib/auth.edge.ts instead.
+ */
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
+  ...authConfig,
   providers: [
     Credentials({
       id: "credentials",
@@ -89,27 +63,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.uid = user.id as string;
-        token.role = user.role;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
-        token.coachId = user.coachId ?? null;
-        token.householdId = user.householdId ?? null;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      session.user.id = token.uid;
-      session.user.role = token.role;
-      session.user.firstName = token.firstName;
-      session.user.lastName = token.lastName;
-      session.user.coachId = token.coachId;
-      session.user.householdId = token.householdId;
-      return session;
-    },
-  },
-  secret: process.env.NEXTAUTH_SECRET,
 });
