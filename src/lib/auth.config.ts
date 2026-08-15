@@ -48,6 +48,10 @@ declare module "@auth/core/jwt" {
 
 export const authConfig: NextAuthConfig = {
   session: { strategy: "jwt" },
+  // Netlify's Next.js runtime doesn't set the VERCEL env var Auth.js uses to
+  // auto-trust the host, so without this every sign-in redirects to
+  // /api/auth/error with a generic "server configuration" message.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
