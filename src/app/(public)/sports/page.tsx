@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { Container, SectionHeading } from "@/components/ui/Container";
 
@@ -28,14 +29,32 @@ export default async function SportsPage() {
             <Link
               key={sport.id}
               href={`/sports/${sport.slug}`}
-              className="group aio-card relative overflow-hidden p-6 transition-transform hover:-translate-y-1"
+              className="group aio-card relative flex h-64 flex-col justify-end overflow-hidden transition-transform hover:-translate-y-1"
             >
-              <div className="aio-wind-glow aio-gradient-red h-28 w-28 -right-8 -top-8 opacity-20 transition-opacity group-hover:opacity-40" />
-              <p className="relative font-display text-xl font-bold group-hover:text-aio-red">{sport.name}</p>
-              <p className="relative mt-2 text-sm text-aio-silver">{sport.description}</p>
-              <p className="relative mt-4 text-xs uppercase tracking-widest text-aio-silver/60">
-                {sport._count.coaches} coach{sport._count.coaches === 1 ? "" : "es"}
-              </p>
+              {sport.imageUrl ? (
+                <Image
+                  src={sport.imageUrl}
+                  alt={sport.name}
+                  fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover opacity-80 transition-transform duration-300 group-hover:scale-105 group-hover:opacity-100"
+                />
+              ) : (
+                <div className="aio-wind-glow aio-gradient-red h-28 w-28 -right-8 -top-8 opacity-20 transition-opacity group-hover:opacity-40" />
+              )}
+              <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black via-black/70 to-transparent" />
+              {sport.slug === "soccer" ? (
+                <span className="absolute right-3 top-3 rotate-3 border border-aio-red bg-aio-black/80 px-2 py-1 font-display text-[10px] font-bold uppercase tracking-widest text-aio-red">
+                  Coming Soon
+                </span>
+              ) : null}
+              <div className="relative p-6">
+                <p className="font-display text-xl font-bold text-white group-hover:text-aio-red">{sport.name}</p>
+                <p className="mt-2 line-clamp-2 text-sm text-aio-silver-light/80">{sport.description}</p>
+                <p className="mt-3 text-xs uppercase tracking-widest text-aio-silver/60">
+                  {sport._count.coaches} coach{sport._count.coaches === 1 ? "" : "es"}
+                </p>
+              </div>
             </Link>
           ))}
         </div>

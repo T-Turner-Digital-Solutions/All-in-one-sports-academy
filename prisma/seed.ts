@@ -25,26 +25,37 @@ async function main() {
 
   // ---- Sports (admin-manageable; these are just initial examples) --------
   const sportDefs = [
-    { name: "Football", slug: "football", iconKey: "football" },
-    { name: "Basketball", slug: "basketball", iconKey: "basketball" },
-    { name: "Baseball", slug: "baseball", iconKey: "baseball" },
-    { name: "Softball", slug: "softball", iconKey: "softball" },
-    { name: "Soccer", slug: "soccer", iconKey: "soccer" },
-    { name: "Speed & Agility", slug: "speed-agility", iconKey: "speed" },
-    { name: "Strength & Conditioning", slug: "strength-conditioning", iconKey: "strength" },
-    { name: "Athletic Development", slug: "athletic-development", iconKey: "development" },
-    { name: "Position-Specific Training", slug: "position-specific-training", iconKey: "target" },
+    { name: "Football", slug: "football", iconKey: "football", imageUrl: "/sports/football.png" },
+    { name: "Basketball", slug: "basketball", iconKey: "basketball", imageUrl: "/sports/basketball.png" },
+    { name: "Baseball", slug: "baseball", iconKey: "baseball", imageUrl: "/sports/baseball.png" },
+    { name: "Softball", slug: "softball", iconKey: "softball", imageUrl: "/sports/softball.png" },
+    { name: "Soccer", slug: "soccer", iconKey: "soccer", imageUrl: "/sports/soccer.png" },
+    { name: "Speed & Agility", slug: "speed-agility", iconKey: "speed", imageUrl: "/sports/speed-agility.png" },
+    {
+      name: "Strength & Conditioning",
+      slug: "strength-conditioning",
+      iconKey: "strength",
+      imageUrl: "/sports/strength-conditioning.png",
+    },
+    {
+      name: "Athletic Development",
+      slug: "athletic-development",
+      iconKey: "development",
+      imageUrl: "/sports/athletic-development.png",
+    },
+    { name: "Position-Specific Training", slug: "position-specific-training", iconKey: "target", imageUrl: null },
   ];
 
   const sports = [];
   for (const [i, s] of sportDefs.entries()) {
     const sport = await prisma.sport.upsert({
       where: { slug: s.slug },
-      update: {},
+      update: { imageUrl: s.imageUrl },
       create: {
         name: s.name,
         slug: s.slug,
         iconKey: s.iconKey,
+        imageUrl: s.imageUrl,
         description: `Professional ${s.name.toLowerCase()} coaching for youth and competitive athletes.`,
         isPublished: true,
         sortOrder: i,
