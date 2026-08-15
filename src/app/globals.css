@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+:root {
+  --color-aio-black: #0a0a0b;
+  --color-aio-charcoal: #16171a;
+  --color-aio-charcoal-2: #1f2023;
+  --color-aio-red: #e01218;
+  --color-aio-red-dark: #a30d12;
+  --color-aio-red-glow: #ff3b3b;
+  --color-aio-white: #ffffff;
+  --color-aio-silver: #b8bec4;
+  --color-aio-silver-light: #dde1e4;
+
+  --background: var(--color-aio-black);
+  --foreground: var(--color-aio-white);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-aio-black: var(--color-aio-black);
+  --color-aio-charcoal: var(--color-aio-charcoal);
+  --color-aio-charcoal-2: var(--color-aio-charcoal-2);
+  --color-aio-red: var(--color-aio-red);
+  --color-aio-red-dark: var(--color-aio-red-dark);
+  --color-aio-red-glow: var(--color-aio-red-glow);
+  --color-aio-white: var(--color-aio-white);
+  --color-aio-silver: var(--color-aio-silver);
+  --color-aio-silver-light: var(--color-aio-silver-light);
+  --font-display: var(--font-oswald);
+  --font-sans: var(--font-inter);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Brand motion / energy effects — subtle, never at the cost of legibility */
+/* ---------------------------------------------------------------------- */
+
+.aio-speed-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-image: repeating-linear-gradient(
+    100deg,
+    transparent 0,
+    transparent 38px,
+    rgba(255, 255, 255, 0.035) 39px,
+    rgba(255, 255, 255, 0.035) 41px,
+    transparent 42px,
+    transparent 120px
+  );
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+.aio-wind-glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.aio-gradient-red {
+  background: radial-gradient(circle, var(--color-aio-red) 0%, transparent 70%);
+}
+
+.aio-gradient-silver {
+  background: radial-gradient(circle, var(--color-aio-silver) 0%, transparent 70%);
+}
+
+.aio-diagonal-edge {
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
+}
+
+.aio-diagonal-edge-top {
+  clip-path: polygon(0 12%, 100% 0, 100% 100%, 0 100%);
+}
+
+@keyframes aio-drift {
+  0% {
+    transform: translateX(-6%) translateY(0);
+  }
+  50% {
+    transform: translateX(4%) translateY(2%);
+  }
+  100% {
+    transform: translateX(-6%) translateY(0);
+  }
+}
+
+.aio-animate-drift {
+  animation: aio-drift 18s ease-in-out infinite;
+}
+
+@keyframes aio-underline-sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.aio-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.aio-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.15em;
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--color-aio-red), var(--color-aio-silver));
+  transform-origin: left;
+  animation: aio-underline-sweep 0.6s ease-out forwards;
+}
+
+.aio-metallic-text {
+  background: linear-gradient(120deg, #f5f6f7 0%, #b8bec4 35%, #f5f6f7 55%, #9aa0a6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.aio-card {
+  background: var(--color-aio-charcoal);
+  border: 1px solid rgba(184, 190, 196, 0.14);
+}
+
+.aio-focus-ring:focus-visible {
+  outline: 2px solid var(--color-aio-red);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aio-animate-drift {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
