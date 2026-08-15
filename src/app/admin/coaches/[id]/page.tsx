@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { AvailabilitySection } from "@/components/coach/AvailabilitySection";
 import { CompensationForm, StatusButtons, SportToggle } from "./CoachAdminControls";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,14 @@ export default async function AdminCoachDetailPage({ params }: { params: Promise
           {allSports.map((s) => (
             <SportToggle key={s.id} coachId={coach.id} sportId={s.id} sportName={s.name} active={activeSportIds.has(s.id)} />
           ))}
+        </div>
+      </section>
+
+      <section className="aio-card p-6">
+        <p className="font-display text-lg font-bold">Schedule</p>
+        <p className="mt-1 text-xs text-aio-silver">Set this coach&apos;s recurring weekly availability and block time off on their behalf.</p>
+        <div className="mt-4">
+          <AvailabilitySection coachId={coach.id} />
         </div>
       </section>
 

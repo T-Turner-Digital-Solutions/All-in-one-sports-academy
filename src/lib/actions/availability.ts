@@ -36,14 +36,16 @@ export async function addRecurringAvailabilityAction(_prev: ActionState, formDat
   });
 
   revalidatePath("/coach/availability");
+  revalidatePath(`/admin/coaches/${parsed.data.coachId}`);
   return { success: true };
 }
 
 export async function removeAvailabilityAction(coachId: string, availabilityId: string) {
   const session = await auth();
   assertOwnsCoachRecord(session, coachId);
-  await prisma.coachAvailability.delete({ where: { id: availabilityId } });
+  await prisma.coachAvailability.deleteMany({ where: { id: availabilityId, coachId } });
   revalidatePath("/coach/availability");
+  revalidatePath(`/admin/coaches/${coachId}`);
 }
 
 const blockedTimeSchema = z.object({
@@ -77,5 +79,14 @@ export async function addBlockedTimeAction(_prev: ActionState, formData: FormDat
   });
 
   revalidatePath("/coach/availability");
+  revalidatePath(`/admin/coaches/${parsed.data.coachId}`);
   return { success: true };
+}
+
+export async function removeBlockedTimeAction(coachId: string, blockedTimeId: string) {
+  const session = await auth();
+  assertOwnsCoachRecord(session, coachId);
+  await prisma.blockedTime.deleteMany({ where: { id: blockedTimeId, coachId } });
+  revalidatePath("/coach/availability");
+  revalidatePath(`/admin/coaches/${coachId}`);
 }
