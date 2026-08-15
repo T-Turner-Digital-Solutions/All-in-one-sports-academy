@@ -70,16 +70,20 @@ async function main() {
   }
 
   // ---- Training programs ---------------------------------------------------
-  await prisma.trainingProgram.createMany({
-    data: [
-      { name: "Private 1-on-1 Training", description: "Individualized coaching session.", sortOrder: 0 },
-      { name: "Small Group Training", description: "Train alongside 2-4 athletes.", sortOrder: 1 },
-      { name: "Position-Specific Skills", description: "Targeted work for a specific position.", sortOrder: 2 },
-      { name: "Speed & Agility Session", description: "Movement mechanics, acceleration, change of direction.", sortOrder: 3 },
-      { name: "Strength & Conditioning Session", description: "Athletic strength base and conditioning.", sortOrder: 4 },
-    ],
-    skipDuplicates: true,
-  });
+  const trainingProgramDefs = [
+    { name: "Private 1-on-1 Training", description: "Individualized coaching session.", sortOrder: 0 },
+    { name: "Small Group Training", description: "Train alongside 2-4 athletes.", sortOrder: 1 },
+    { name: "Position-Specific Skills", description: "Targeted work for a specific position.", sortOrder: 2 },
+    { name: "Speed & Agility Session", description: "Movement mechanics, acceleration, change of direction.", sortOrder: 3 },
+    { name: "Strength & Conditioning Session", description: "Athletic strength base and conditioning.", sortOrder: 4 },
+  ];
+  for (const p of trainingProgramDefs) {
+    await prisma.trainingProgram.upsert({
+      where: { name: p.name },
+      update: { description: p.description, sortOrder: p.sortOrder },
+      create: p,
+    });
+  }
 
   // ---- Owner / Super Admin: Justin Woodall --------------------------------
   const ownerPasswordHash = await bcrypt.hash("ChangeMe123!", 12);

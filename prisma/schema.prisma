@@ -381,7 +381,7 @@ model TrainingProgram {
   id          String   @id @default(cuid())
   sportId     String?
   sport       Sport?   @relation(fields: [sportId], references: [id])
-  name        String // e.g. "Position-Specific Training", "Speed & Agility"
+  name        String   @unique // e.g. "Position-Specific Training", "Speed & Agility"
   description String?
   isPublished Boolean  @default(true)
   sortOrder   Int      @default(0)
