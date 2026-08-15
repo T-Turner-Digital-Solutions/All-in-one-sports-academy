@@ -30,6 +30,7 @@ export async function sendEmail({ userId, to, subject, body, type, relatedAppoin
   const notification = await prisma.notification.create({
     data: {
       userId,
+      to,
       channel: NotificationChannel.EMAIL,
       type,
       subject,
@@ -71,10 +72,74 @@ export async function sendEmail({ userId, to, subject, body, type, relatedAppoin
   return notification;
 }
 
+export type NotifiableRecipient = {
+  userId?: string;
+  firstName: string;
+  email: string | null;
+  phone: string | null;
+};
+
+/**
+ * A household's full notification audience: its login-capable members plus
+ * any notification-only HouseholdContacts (e.g. a second parent who doesn't
+ * need a portal login). Both shapes get reduced to the same recipient shape
+ * so callers can notify a household without caring which kind each
+ * recipient is.
+ */
+export function householdRecipients(household: {
+  members: Array<{ id: string; firstName: string; email: string; phone: string | null }>;
+  contacts?: Array<{ firstName: string; email: string | null; phone: string | null }>;
+}): NotifiableRecipient[] {
+  return [
+    ...household.members.map((m) => ({ userId: m.id, firstName: m.firstName, email: m.email, phone: m.phone })),
+    ...(household.contacts ?? []).map((c) => ({ firstName: c.firstName, email: c.email, phone: c.phone })),
+  ];
+}
+
+/**
+ * Sends the same notification (email if the recipient has an email, SMS if
+ * they have a phone number -- both if they have both) to every recipient in
+ * the list. Bodies are functions of firstName so each recipient still gets a
+ * personalized greeting.
+ */
+export async function notifyRecipients(
+  recipients: NotifiableRecipient[],
+  opts: {
+    subject: string;
+    htmlBody: (firstName: string) => string;
+    smsBody: (firstName: string) => string;
+    type: NotificationType;
+    relatedAppointmentId?: string;
+  }
+) {
+  for (const r of recipients) {
+    if (r.email) {
+      await sendEmail({
+        userId: r.userId,
+        to: r.email,
+        subject: opts.subject,
+        body: opts.htmlBody(r.firstName),
+        type: opts.type,
+        relatedAppointmentId: opts.relatedAppointmentId,
+      });
+    }
+    if (r.phone) {
+      await sendSms({
+        userId: r.userId,
+        to: r.phone,
+        body: opts.smsBody(r.firstName),
+        type: opts.type,
+        relatedAppointmentId: opts.relatedAppointmentId,
+      });
+    }
+  }
+}
+
 export async function sendSms({ userId, to, body, type, relatedAppointmentId }: SendSmsArgs) {
   const notification = await prisma.notification.create({
     data: {
       userId,
+      to,
       channel: NotificationChannel.SMS,
       type,
       body,

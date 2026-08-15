@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/notifications";
+import { notifyRecipients, householdRecipients } from "@/lib/notifications";
 import { formatDateTime, formatCents } from "@/lib/format";
 
 /**
@@ -35,21 +35,20 @@ export async function finalizeSuccessfulPayment(paymentId: string) {
 async function handleCampPaymentSuccess(campRegistrationId: string) {
   const registration = await prisma.campRegistration.findUnique({
     where: { id: campRegistrationId },
-    include: { camp: true, athlete: { include: { household: { include: { members: true } } } } },
+    include: { camp: true, athlete: { include: { household: { include: { members: true, contacts: true } } } } },
   });
   if (!registration) return;
 
-  for (const member of registration.athlete.household.members) {
-    await sendEmail({
-      userId: member.id,
-      to: member.email,
-      subject: `Registration Confirmed: ${registration.camp.name}`,
-      body: `<p>Hi ${member.firstName},</p><p>${registration.athlete.firstName} is registered for
+  await notifyRecipients(householdRecipients(registration.athlete.household), {
+    subject: `Registration Confirmed: ${registration.camp.name}`,
+    htmlBody: (firstName) =>
+      `<p>Hi ${firstName},</p><p>${registration.athlete.firstName} is registered for
         ${registration.camp.name} on ${formatDateTime(registration.camp.startsAt)}. Amount charged:
         ${formatCents(registration.camp.priceCents)}. This payment is final and nonrefundable.</p>`,
-      type: "BOOKING_CONFIRMATION",
-    });
-  }
+    smsBody: () =>
+      `AIO Sports Academy: ${registration.athlete.firstName} is registered for ${registration.camp.name} on ${formatDateTime(registration.camp.startsAt)}. Charged ${formatCents(registration.camp.priceCents)}.`,
+    type: "BOOKING_CONFIRMATION",
+  });
 }
 
 async function handleAppointmentPaymentSuccess(appointmentId: string, grossAmountCents: number) {
@@ -58,7 +57,7 @@ async function handleAppointmentPaymentSuccess(appointmentId: string, grossAmoun
     include: {
       athlete: true,
       sport: true,
-      household: { include: { members: true } },
+      household: { include: { members: true, contacts: true } },
       coach: { include: { user: true } },
     },
   });
@@ -98,20 +97,19 @@ async function handleAppointmentPaymentSuccess(appointmentId: string, grossAmoun
     });
   }
 
-  for (const member of appointment.household.members) {
-    await sendEmail({
-      userId: member.id,
-      to: member.email,
-      subject: "Booking Confirmed — All In One Sports Academy",
-      body: `<p>Hi ${member.firstName},</p>
+  await notifyRecipients(householdRecipients(appointment.household), {
+    subject: "Booking Confirmed — All In One Sports Academy",
+    htmlBody: (firstName) =>
+      `<p>Hi ${firstName},</p>
         <p>${appointment.athlete.firstName}'s ${appointment.sport.name} session with Coach
         ${appointment.coach.user.firstName} ${appointment.coach.user.lastName} is confirmed for
         ${formatDateTime(appointment.startsAt)}.</p>
         <p>Amount charged: ${formatCents(grossAmountCents)}. All payments are final and nonrefundable;
         you may reschedule up to 72 hours before your session from your dashboard.</p>`,
-      type: "BOOKING_CONFIRMATION",
-    });
-  }
+    smsBody: () =>
+      `AIO Sports Academy: ${appointment.athlete.firstName}'s ${appointment.sport.name} session with Coach ${appointment.coach.user.firstName} is confirmed for ${formatDateTime(appointment.startsAt)}. Charged ${formatCents(grossAmountCents)}.`,
+    type: "BOOKING_CONFIRMATION",
+  });
 }
 
 type CoachForSplit = {
