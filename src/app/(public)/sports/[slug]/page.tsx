@@ -57,7 +57,7 @@ export default async function SportDetailPage({ params }: { params: Promise<{ sl
           ) : null}
           <p className="mt-4 max-w-2xl text-aio-silver-light/90">{sport.description}</p>
           <ButtonLink href={`/book?sport=${sport.id}`} className="mt-8">
-            Book {sport.name} Training — $80
+            Book {sport.name} Training — $80/hr
           </ButtonLink>
 
           {sport.trainingPrograms.length > 0 ? (

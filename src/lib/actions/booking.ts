@@ -3,7 +3,14 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { createHold, SlotUnavailableError, getSinglSessionPriceCents } from "@/lib/booking";
+import {
+  createHold,
+  SlotUnavailableError,
+  getSinglSessionPriceCents,
+  MIN_SESSION_HOURS,
+  MAX_SESSION_HOURS,
+  SESSION_LENGTH_MINUTES,
+} from "@/lib/booking";
 import { isStripeConfigured, getStripe } from "@/lib/stripe";
 import { CURRENT_POLICY_VERSION, POLICY_ACCEPTANCE_TEXT } from "@/lib/policy";
 import { finalizeSuccessfulPayment } from "@/lib/payments";
@@ -15,6 +22,7 @@ const holdSchema = z.object({
   trainingProgramId: z.string().optional(),
   coachId: z.string().min(1),
   startsAt: z.string().min(1),
+  hours: z.coerce.number().int().min(MIN_SESSION_HOURS).max(MAX_SESSION_HOURS),
 });
 
 export type HoldState = {
@@ -35,10 +43,11 @@ export async function createHoldAction(_prev: HoldState, formData: FormData): Pr
     trainingProgramId: formData.get("trainingProgramId") || undefined,
     coachId: formData.get("coachId"),
     startsAt: formData.get("startsAt"),
+    hours: formData.get("hours"),
   });
   if (!parsed.success) return { error: "Please complete every step before continuing." };
 
-  const { athleteId, sportId, trainingProgramId, coachId, startsAt } = parsed.data;
+  const { athleteId, sportId, trainingProgramId, coachId, startsAt, hours } = parsed.data;
 
   const athlete = await prisma.athlete.findUnique({ where: { id: athleteId } });
   if (!athlete || athlete.householdId !== session.user.householdId) {
@@ -50,7 +59,8 @@ export async function createHoldAction(_prev: HoldState, formData: FormData): Pr
   });
   if (!qualified) return { error: "That coach isn't qualified for the selected sport." };
 
-  const priceCents = await getSinglSessionPriceCents();
+  const pricePerHourCents = await getSinglSessionPriceCents();
+  const priceCents = pricePerHourCents * hours;
 
   try {
     const appointment = await createHold({
@@ -60,6 +70,7 @@ export async function createHoldAction(_prev: HoldState, formData: FormData): Pr
       sportId,
       trainingProgramId,
       startsAt: new Date(startsAt),
+      durationMinutes: hours * SESSION_LENGTH_MINUTES,
       priceCents,
       source: "PUBLIC_BOOKING",
     });

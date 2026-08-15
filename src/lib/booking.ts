@@ -17,6 +17,8 @@ import { Prisma } from "@prisma/client";
 
 export const HOLD_DURATION_MINUTES = 10;
 export const SESSION_LENGTH_MINUTES = 60;
+export const MIN_SESSION_HOURS = 1;
+export const MAX_SESSION_HOURS = 4;
 
 const OCCUPYING_STATUSES = [
   "HELD",
@@ -48,9 +50,16 @@ function minutesToDate(base: Date, minutes: number): Date {
 /**
  * Returns available start times (as Date objects) for a coach on a given
  * calendar date, derived from their recurring/one-time availability minus
- * blocked time and existing appointments.
+ * blocked time and existing appointments. Start times are always on the
+ * hour; `durationMinutes` controls how much contiguous room each candidate
+ * start time must have free ahead of it to count as available (sessions are
+ * booked in whole hours, so this is always a multiple of 60).
  */
-export async function getAvailableSlotsForCoachOnDate(coachId: string, date: Date): Promise<Date[]> {
+export async function getAvailableSlotsForCoachOnDate(
+  coachId: string,
+  date: Date,
+  durationMinutes: number = SESSION_LENGTH_MINUTES
+): Promise<Date[]> {
   const dayStart = new Date(date);
   dayStart.setHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart);
@@ -93,9 +102,9 @@ export async function getAvailableSlotsForCoachOnDate(coachId: string, date: Dat
     const startMin = timeStringToMinutes(window.startTime);
     const endMin = timeStringToMinutes(window.endTime);
 
-    for (let m = startMin; m + SESSION_LENGTH_MINUTES <= endMin; m += SESSION_LENGTH_MINUTES) {
+    for (let m = startMin; m + durationMinutes <= endMin; m += SESSION_LENGTH_MINUTES) {
       const slotStart = minutesToDate(dayStart, m);
-      const slotEnd = new Date(slotStart.getTime() + SESSION_LENGTH_MINUTES * 60_000);
+      const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60_000);
 
       if (slotStart < new Date()) continue; // no past slots
 
@@ -129,12 +138,13 @@ type CreateHoldArgs = {
   trainingProgramId?: string | null;
   locationId?: string | null;
   startsAt: Date;
+  durationMinutes?: number;
   priceCents: number;
   source?: "PUBLIC_BOOKING" | "ADMIN_MANUAL" | "RECURRING" | "WAITLIST_OFFER";
 };
 
 export async function createHold(args: CreateHoldArgs) {
-  const endsAt = new Date(args.startsAt.getTime() + SESSION_LENGTH_MINUTES * 60_000);
+  const endsAt = new Date(args.startsAt.getTime() + (args.durationMinutes ?? SESSION_LENGTH_MINUTES) * 60_000);
   const holdExpiresAt = new Date(Date.now() + HOLD_DURATION_MINUTES * 60_000);
 
   try {
@@ -170,6 +180,11 @@ export async function releaseExpiredHolds() {
   return result.count;
 }
 
+/**
+ * The academy's hourly training rate, in cents. Training is booked in whole
+ * hours (see MIN/MAX_SESSION_HOURS) and priced at this rate × hours booked —
+ * this function returns the per-hour rate, not a flat per-booking price.
+ */
 export async function getSinglSessionPriceCents(): Promise<number> {
   const setting = await prisma.setting.findUnique({ where: { key: "single_session_price_cents" } });
   if (setting && typeof setting.value === "number") return setting.value;

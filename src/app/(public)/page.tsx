@@ -24,7 +24,7 @@ export default async function HomePage() {
     prisma.review.findMany({ where: { isApprovedPublic: true }, include: { user: true }, take: 3 }),
   ]);
 
-  const priceLabel = singleSession ? formatCents(singleSession.priceCents) : "$80";
+  const priceLabel = `${singleSession ? formatCents(singleSession.priceCents) : "$80"}/hr`;
 
   return (
     <>
@@ -77,7 +77,7 @@ export default async function HomePage() {
           {[
             { icon: Trophy, label: "Sports Offered", value: `${sports.length || 9}+` },
             { icon: Users, label: "Athletes Coached", value: "500+" },
-            { icon: Zap, label: "Per Session", value: priceLabel },
+            { icon: Zap, label: "Per Hour", value: priceLabel },
             { icon: ShieldCheck, label: "Certified Coaches", value: "100%" },
           ].map((s) => (
             <div key={s.label} className="flex items-center gap-3">

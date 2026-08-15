@@ -14,7 +14,7 @@ export function SettingsForm({ singleSessionPriceCents }: { singleSessionPriceCe
   return (
     <form action={formAction} className="aio-card grid gap-4 p-6 sm:grid-cols-3">
       <div>
-        <label className={label}>Single Session Price (cents)</label>
+        <label className={label}>Price Per Hour (cents)</label>
         <input name="single_session_price_cents" type="number" defaultValue={singleSessionPriceCents} className={input} />
       </div>
       {state.error ? <p className="text-sm text-aio-red sm:col-span-3">{state.error}</p> : null}

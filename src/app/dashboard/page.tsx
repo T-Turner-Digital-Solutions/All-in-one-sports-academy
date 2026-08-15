@@ -65,7 +65,7 @@ export default async function ClientDashboardPage() {
           <p className="font-display text-lg font-bold">Quick Actions</p>
           <div className="mt-4 flex flex-col gap-3">
             <ButtonLink href="/book" size="sm">
-              Book Training — $80
+              Book Training — $80/hr
             </ButtonLink>
             <ButtonLink href="/dashboard/athletes" variant="outline" size="sm">
               Manage Athletes

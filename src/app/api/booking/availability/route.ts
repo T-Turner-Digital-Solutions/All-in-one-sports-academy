@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAvailableSlotsForCoachOnDate } from "@/lib/booking";
+import { getAvailableSlotsForCoachOnDate, MIN_SESSION_HOURS, MAX_SESSION_HOURS, SESSION_LENGTH_MINUTES } from "@/lib/booking";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -13,6 +13,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
-  const slots = await getAvailableSlotsForCoachOnDate(coachId, date);
+  const hoursParam = Number(searchParams.get("hours") ?? MIN_SESSION_HOURS);
+  const hours = Number.isFinite(hoursParam)
+    ? Math.min(MAX_SESSION_HOURS, Math.max(MIN_SESSION_HOURS, Math.round(hoursParam)))
+    : MIN_SESSION_HOURS;
+
+  const slots = await getAvailableSlotsForCoachOnDate(coachId, date, hours * SESSION_LENGTH_MINUTES);
   return NextResponse.json({ slots: slots.map((s) => s.toISOString()) });
 }

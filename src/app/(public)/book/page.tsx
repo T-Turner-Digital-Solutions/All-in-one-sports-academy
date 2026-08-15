@@ -16,7 +16,7 @@ export default async function BookPage({
   const { sport, coach } = await searchParams;
   const session = await auth();
 
-  const [sports, trainingPrograms, athletes, priceCents] = await Promise.all([
+  const [sports, trainingPrograms, athletes, pricePerHourCents] = await Promise.all([
     prisma.sport.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
     prisma.trainingProgram.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
     session?.user.role === "CLIENT" && session.user.householdId
@@ -45,7 +45,7 @@ export default async function BookPage({
               dob: a.dob.toISOString(),
             }))}
             loggedIn={Boolean(session && session.user.role === "CLIENT")}
-            priceCents={priceCents}
+            pricePerHourCents={pricePerHourCents}
             isStripeConfigured={isStripeConfigured()}
             initialSportId={sport}
             initialCoachId={coach}

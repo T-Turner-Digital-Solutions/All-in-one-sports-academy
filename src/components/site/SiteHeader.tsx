@@ -89,7 +89,7 @@ export function SiteHeader() {
             ) : null}
           </div>
           <ButtonLink href="/book" size="sm">
-            Book Training — $80
+            Book Training — $80/hr
           </ButtonLink>
         </div>
 
@@ -130,7 +130,7 @@ export function SiteHeader() {
               ))}
             </div>
             <ButtonLink href="/book" className="mt-6 w-full" onClick={() => setOpen(false)}>
-              Book Training — $80
+              Book Training — $80/hr
             </ButtonLink>
           </Container>
         </div>
