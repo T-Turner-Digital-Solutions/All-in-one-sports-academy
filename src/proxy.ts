@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth.edge";
 
 /**
  * Backend/route-level enforcement of portal access. Hidden navigation is
