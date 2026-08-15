@@ -6,6 +6,12 @@ import { Container, SectionHeading } from "@/components/ui/Container";
 import { formatCents } from "@/lib/format";
 import { ArrowRight, ShieldCheck, Trophy, Users, Zap } from "lucide-react";
 
+// Force per-request rendering instead of build-time static generation: this
+// page queries the database, and the production build environment does not
+// have database access (only the running server does). Static/ISR rendering
+// would make `next build` fail outright with no DB reachable at build time.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [sports, coaches, singleSession, reviews] = await Promise.all([
     prisma.sport.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" }, take: 8 }),

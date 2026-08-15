@@ -1,0 +1,26 @@
+# Netlify configuration for All In One Sports Academy.
+#
+# This is a Next.js 16 App Router application using Server Actions, dynamic
+# API routes, and middleware (src/proxy.ts) for auth-gated portals
+# (/admin, /coach, /dashboard). It is NOT a static site or a client-side SPA,
+# so it must be built and served through the official Next.js Runtime for
+# Netlify (@netlify/plugin-nextjs, declared below), which packages the app
+# into Netlify Functions/Edge Functions and handles all routing — including
+# dynamic segments (e.g. /coaches/[id], /sports/[slug]) and middleware —
+# automatically. Do NOT add a manual SPA-style `/* /index.html 200` redirect;
+# that is for purely client-rendered apps and would break this app's
+# server-rendered routes, API routes, and auth middleware.
+#
+# This file intentionally overrides any conflicting values previously set in
+# the Netlify UI (Site configuration > Build & deploy), per Netlify's
+# documented precedence: netlify.toml wins over dashboard settings.
+
+[build]
+  command = "next build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
