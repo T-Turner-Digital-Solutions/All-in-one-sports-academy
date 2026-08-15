@@ -29,30 +29,31 @@ export default async function SportsPage() {
             <Link
               key={sport.id}
               href={`/sports/${sport.slug}`}
-              className="group aio-card relative flex h-64 flex-col justify-end overflow-hidden transition-transform hover:-translate-y-1"
+              className="group aio-card overflow-hidden transition-transform hover:-translate-y-1"
             >
-              {sport.imageUrl ? (
-                <Image
-                  src={sport.imageUrl}
-                  alt={sport.name}
-                  fill
-                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  className="object-cover opacity-80 transition-transform duration-300 group-hover:scale-105 group-hover:opacity-100"
-                />
-              ) : (
-                <div className="aio-wind-glow aio-gradient-red h-28 w-28 -right-8 -top-8 opacity-20 transition-opacity group-hover:opacity-40" />
-              )}
-              <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black via-black/70 to-transparent" />
-              {sport.slug === "soccer" ? (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
-                  <span className="-rotate-6 border-y-2 border-aio-red bg-aio-black px-4 py-2 text-center font-display text-xl font-bold uppercase tracking-widest text-aio-red sm:text-2xl">
-                    Coming Soon
-                  </span>
-                </div>
-              ) : null}
-              <div className="relative p-6">
-                <p className="font-display text-xl font-bold text-white group-hover:text-aio-red">{sport.name}</p>
-                <p className="mt-2 line-clamp-2 text-sm text-aio-silver-light/80">{sport.description}</p>
+              <div className="relative h-44 overflow-hidden bg-aio-black">
+                {sport.imageUrl ? (
+                  <Image
+                    src={sport.imageUrl}
+                    alt={sport.name}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="aio-wind-glow aio-gradient-red h-28 w-28 -right-8 -top-8 opacity-20 transition-opacity group-hover:opacity-40" />
+                )}
+                {sport.slug === "soccer" ? (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+                    <span className="-rotate-6 border-y-2 border-aio-red bg-aio-black px-4 py-2 text-center font-display text-xl font-bold uppercase tracking-widest text-aio-red sm:text-2xl">
+                      Coming Soon
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+              <div className="p-6">
+                <p className="font-display text-xl font-bold text-aio-white group-hover:text-aio-red">{sport.name}</p>
+                <p className="mt-2 line-clamp-2 text-sm text-aio-silver">{sport.description}</p>
                 <p className="mt-3 text-xs uppercase tracking-widest text-aio-silver/60">
                   {sport._count.coaches} coach{sport._count.coaches === 1 ? "" : "es"}
                 </p>
