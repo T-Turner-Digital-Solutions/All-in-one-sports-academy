@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -30,111 +31,133 @@ const LOGIN_LINKS = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
-  return (
-    <header className="aio-header sticky top-0 z-50 backdrop-blur">
-      <Container className="relative flex h-16 items-center justify-between sm:h-20">
-        <Link href="/" className="flex items-center gap-3">
-          <Image
-            src="/brand/aio-logo-icon.png"
-            alt="All In One Sports Academy"
-            width={44}
-            height={44}
-            unoptimized
-            className="h-10 w-10 opacity-80 sm:h-11 sm:w-11"
-            priority
-          />
-          <span className="hidden font-display text-lg font-bold tracking-wider sm:inline">
-            <span className="aio-metallic-text">ALL IN ONE</span> <span className="text-aio-red">SPORTS ACADEMY</span>
-          </span>
-        </Link>
+  // Portal target (document.body) only exists once mounted on the client.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- standard client-mount-detection idiom for portals
+    setMounted(true);
+  }, []);
 
-        <nav className="hidden items-center gap-6 lg:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "font-display text-xs font-semibold uppercase tracking-wide text-aio-silver-light transition-colors hover:text-aio-red",
-                pathname === link.href && "text-aio-red"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="hidden items-center gap-4 lg:flex">
-          <div className="relative">
-            <button
-              onClick={() => setLoginOpen((v) => !v)}
-              onBlur={() => setTimeout(() => setLoginOpen(false), 150)}
-              className="flex items-center gap-1 font-display text-xs font-semibold uppercase tracking-wide text-aio-silver-light hover:text-aio-white"
-            >
-              Login <ChevronDown size={14} />
-            </button>
-            {loginOpen ? (
-              <div className="absolute right-0 top-full mt-2 w-44 border border-white/10 bg-aio-charcoal py-2 shadow-xl">
+  // The header has backdrop-blur, and CSS spec makes an element with
+  // backdrop-filter the containing block for any `position: fixed`
+  // descendant (instead of the viewport) -- this broke the full-screen
+  // mobile menu overlay, especially on iOS Safari, where page content
+  // rendered through/behind it instead of being fully covered. Rendering
+  // the menu through a portal into document.body keeps it out of the
+  // header's DOM subtree entirely, sidestepping that containing-block quirk.
+  const mobileMenu =
+    mounted && open
+      ? createPortal(
+          <div className="fixed inset-0 z-[100] flex flex-col bg-aio-black lg:hidden">
+            <Container className="flex h-16 shrink-0 items-center justify-between sm:h-20">
+              <span className="font-display text-lg font-bold">MENU</span>
+              <button aria-label="Close menu" onClick={() => setOpen(false)}>
+                <X />
+              </button>
+            </Container>
+            <Container className="flex flex-1 flex-col gap-1 overflow-y-auto pb-10">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="border-b border-white/10 py-4 font-display text-lg font-semibold uppercase tracking-wide"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="mt-4 flex flex-col gap-2">
                 {LOGIN_LINKS.map((l) => (
                   <Link
                     key={l.href}
                     href={l.href}
-                    className="block px-4 py-2 text-sm text-aio-silver-light hover:bg-white/5 hover:text-aio-white"
+                    onClick={() => setOpen(false)}
+                    className="py-2 font-display text-sm uppercase tracking-wide text-aio-silver-light"
                   >
                     {l.label}
                   </Link>
                 ))}
               </div>
-            ) : null}
-          </div>
-          <ButtonLink href="/book" size="sm">
-            Book Training — $80/hr
-          </ButtonLink>
-        </div>
+              <ButtonLink href="/book" className="mt-6 w-full" onClick={() => setOpen(false)}>
+                Book Training — $80/hr
+              </ButtonLink>
+            </Container>
+          </div>,
+          document.body
+        )
+      : null;
 
-        <button className="lg:hidden" aria-label="Open menu" onClick={() => setOpen(true)}>
-          <Menu />
-        </button>
-      </Container>
+  return (
+    <>
+      <header className="aio-header sticky top-0 z-50 backdrop-blur">
+        <Container className="relative flex h-16 items-center justify-between sm:h-20">
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/brand/aio-logo-icon.png"
+              alt="All In One Sports Academy"
+              width={44}
+              height={44}
+              unoptimized
+              className="h-10 w-10 opacity-80 sm:h-11 sm:w-11"
+              priority
+            />
+            <span className="hidden font-display text-lg font-bold tracking-wider sm:inline">
+              <span className="aio-metallic-text">ALL IN ONE</span> <span className="text-aio-red">SPORTS ACADEMY</span>
+            </span>
+          </Link>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 bg-aio-black lg:hidden">
-          <Container className="flex h-16 items-center justify-between sm:h-20">
-            <span className="font-display text-lg font-bold">MENU</span>
-            <button aria-label="Close menu" onClick={() => setOpen(false)}>
-              <X />
-            </button>
-          </Container>
-          <Container className="flex flex-col gap-1 pb-10">
+          <nav className="hidden items-center gap-6 lg:flex">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setOpen(false)}
-                className="border-b border-white/10 py-4 font-display text-lg font-semibold uppercase tracking-wide"
+                className={cn(
+                  "font-display text-xs font-semibold uppercase tracking-wide text-aio-silver-light transition-colors hover:text-aio-red",
+                  pathname === link.href && "text-aio-red"
+                )}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="mt-4 flex flex-col gap-2">
-              {LOGIN_LINKS.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className="py-2 font-display text-sm uppercase tracking-wide text-aio-silver-light"
-                >
-                  {l.label}
-                </Link>
-              ))}
+          </nav>
+
+          <div className="hidden items-center gap-4 lg:flex">
+            <div className="relative">
+              <button
+                onClick={() => setLoginOpen((v) => !v)}
+                onBlur={() => setTimeout(() => setLoginOpen(false), 150)}
+                className="flex items-center gap-1 font-display text-xs font-semibold uppercase tracking-wide text-aio-silver-light hover:text-aio-white"
+              >
+                Login <ChevronDown size={14} />
+              </button>
+              {loginOpen ? (
+                <div className="absolute right-0 top-full mt-2 w-44 border border-white/10 bg-aio-charcoal py-2 shadow-xl">
+                  {LOGIN_LINKS.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      className="block px-4 py-2 text-sm text-aio-silver-light hover:bg-white/5 hover:text-aio-white"
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
             </div>
-            <ButtonLink href="/book" className="mt-6 w-full" onClick={() => setOpen(false)}>
+            <ButtonLink href="/book" size="sm">
               Book Training — $80/hr
             </ButtonLink>
-          </Container>
-        </div>
-      ) : null}
-    </header>
+          </div>
+
+          <button className="lg:hidden" aria-label="Open menu" onClick={() => setOpen(true)}>
+            <Menu />
+          </button>
+        </Container>
+      </header>
+
+      {mobileMenu}
+    </>
   );
 }
